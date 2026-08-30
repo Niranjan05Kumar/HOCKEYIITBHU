@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import notFoundHandler from "./middleware/notFoundHandler.js";
+import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
 app.use(helmet());
@@ -32,5 +34,13 @@ app.get("/api/v1/health", (_req, res) => {
         message: "API is running",
     });
 });
+
+// Routes will be added here
+
+
+
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;
