@@ -30,6 +30,7 @@
         "typescript-eslint": "^8.68.0"
     },
     "dependencies": {
+        "@imagekit/nodejs": "^7.11.0",
         "@types/express-session": "^1.19.0",
         "argon2": "^0.45.1",
         "cors": "^2.8.6",
