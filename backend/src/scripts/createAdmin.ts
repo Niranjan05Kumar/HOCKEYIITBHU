@@ -12,7 +12,6 @@ connectDB();
 
 const createAdmin = async () => {
     try {
-
         if (!adminEmail) {
             console.error("Admin email not provided, please set ADMIN_EMAIL in the backend .env file");
             await disconnectDB();
