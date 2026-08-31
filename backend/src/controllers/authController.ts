@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/appError.js";
-import { getCurrentAdmin, loginAdmin } from "../services/authService.js";
+import { getCurrentAdmin, loginAdmin, logoutAdmin } from "../services/authService.js";
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
     const admin = await loginAdmin(req.body);
@@ -41,6 +41,8 @@ export const getCurrentAdminController = asyncHandler(async (req: Request, res: 
 });
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
+    await logoutAdmin();
+
     if (req.session) {
         await new Promise<void>((resolve, reject) => {
             req.session.destroy((error) => {
