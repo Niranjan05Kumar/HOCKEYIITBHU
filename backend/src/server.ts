@@ -1,5 +1,3 @@
-// For Server Setup
-import express from "express";
 import connectDB from "./config/database.js";
 import app from "./app.js";
 import dotenv from "dotenv";
