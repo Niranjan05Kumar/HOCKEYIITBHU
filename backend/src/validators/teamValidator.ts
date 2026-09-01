@@ -102,7 +102,7 @@ export const validateTeamParams = (req: Request, _res: Response, next: NextFunct
         return;
     }
 
-    req.params = result.data;
+    Object.assign(req.params, result.data);
     next();
 };
 
@@ -114,6 +114,6 @@ export const validateTeamQuery = (req: Request, _res: Response, next: NextFuncti
         return;
     }
 
-    req.query = result.data as typeof req.query;
+    Object.assign(req.query, result.data);
     next();
 };

@@ -96,7 +96,7 @@ export const validateMatchParams = (req: Request, _res: Response, next: NextFunc
         return;
     }
 
-    req.params = result.data;
+    Object.assign(req.params, result.data);
     next();
 };
 
@@ -108,6 +108,6 @@ export const validateMatchQuery = (req: Request, _res: Response, next: NextFunct
         return;
     }
 
-    req.query = result.data as typeof req.query;
+    Object.assign(req.query, result.data);
     next();
 };

@@ -123,7 +123,7 @@ export const validatePlayerParams = (req: Request, _res: Response, next: NextFun
         return;
     }
 
-    req.params = result.data;
+    Object.assign(req.params, result.data);
     next();
 };
 
@@ -135,6 +135,6 @@ export const validatePlayerQuery = (req: Request, _res: Response, next: NextFunc
         return;
     }
 
-    req.query = result.data as typeof req.query;
+    Object.assign(req.query, result.data);
     next();
 };

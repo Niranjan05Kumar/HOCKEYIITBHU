@@ -106,7 +106,7 @@ export const validateAchievementParams = (req: Request, _res: Response, next: Ne
         return;
     }
 
-    req.params = result.data;
+    Object.assign(req.params, result.data);
     next();
 };
 
@@ -118,6 +118,6 @@ export const validateAchievementQuery = (req: Request, _res: Response, next: Nex
         return;
     }
 
-    req.query = result.data as typeof req.query;
+    Object.assign(req.query, result.data);
     next();
 };

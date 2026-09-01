@@ -106,7 +106,7 @@ export const validateTournamentEditionParams = (req: Request, _res: Response, ne
         return;
     }
 
-    req.params = result.data;
+    Object.assign(req.params, result.data);
     next();
 };
 
@@ -118,6 +118,6 @@ export const validateTournamentEditionQuery = (req: Request, _res: Response, nex
         return;
     }
 
-    req.query = result.data as typeof req.query;
+    Object.assign(req.query, result.data);
     next();
 };

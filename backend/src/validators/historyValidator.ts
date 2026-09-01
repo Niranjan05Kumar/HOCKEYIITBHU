@@ -104,7 +104,7 @@ export const validateHistoryParams = (req: Request, _res: Response, next: NextFu
         return;
     }
 
-    req.params = result.data;
+    Object.assign(req.params, result.data);
     next();
 };
 
@@ -116,6 +116,6 @@ export const validateHistoryQuery = (req: Request, _res: Response, next: NextFun
         return;
     }
 
-    req.query = result.data as typeof req.query;
+    Object.assign(req.query, result.data);
     next();
 };
