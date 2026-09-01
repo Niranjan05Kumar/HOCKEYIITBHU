@@ -15,6 +15,10 @@ const playerSchema = new Schema(
             type: String,
             trim: true,
         },
+        profilePhotoFileId: {
+            type: String,
+            trim: true,
+        },
         playingPosition: {
             type: String,
             enum: PLAYING_POSITIONS,

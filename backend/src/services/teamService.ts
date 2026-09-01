@@ -3,6 +3,7 @@ import TeamModel from "../models/teamModel.js";
 import PlayerModel from "../models/playerModel.js";
 import TournamentEditionModel from "../models/tournamentEditionModel.js";
 import AchievementModel from "../models/achievementModel.js";
+import { deleteImage } from "../services/imageService.js";
 import AppError from "../utils/appError.js";
 
 export type TeamCreateInput = {
@@ -12,6 +13,7 @@ export type TeamCreateInput = {
     viceCaptain?: string;
     coach?: string;
     teamPhoto?: string;
+    teamPhotoFileId?: string;
     achievements?: string[];
 };
 
@@ -83,7 +85,10 @@ export const createTeam = async (data: TeamCreateInput) => {
         }
     }
 
-    const team = await TeamModel.create(data);
+    const team = await TeamModel.create({
+        ...data,
+        ...(data.teamPhotoFileId !== undefined ? { teamPhotoFileId: data.teamPhotoFileId } : {}),
+    });
     return team;
 };
 
@@ -171,6 +176,16 @@ export const updateTeam = async (id: string, data: Partial<TeamCreateInput>) => 
         validateObjectIdList(data.achievements, "achievements");
     }
 
+    if (data.teamPhoto !== undefined && data.teamPhoto !== team.teamPhoto && team.teamPhotoFileId) {
+        await deleteImage(team.teamPhotoFileId);
+    }
+
+    if (data.teamPhotoFileId !== undefined && data.teamPhotoFileId !== team.teamPhotoFileId) {
+        if (team.teamPhotoFileId && data.teamPhoto === undefined) {
+            await deleteImage(team.teamPhotoFileId);
+        }
+    }
+
     Object.assign(team, data);
     await team.save();
 
@@ -196,6 +211,10 @@ export const deleteTeam = async (id: string) => {
     }).select("_id");
     if (achievementInUse) {
         throw new AppError("Cannot delete team because it is referenced by achievement records", 409);
+    }
+
+    if (team.teamPhotoFileId) {
+        await deleteImage(team.teamPhotoFileId);
     }
 
     await TeamModel.findByIdAndDelete(id);

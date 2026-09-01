@@ -20,6 +20,10 @@ const galleryItemSchema = new Schema(
             trim: true,
             minlength: 1,
         },
+        imageFileId: {
+            type: String,
+            trim: true,
+        },
         year: {
             type: Number,
         },

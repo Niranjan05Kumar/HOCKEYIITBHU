@@ -33,6 +33,12 @@ const buildValidationError = (result: {
 export const galleryBodySchema = z
     .object({
         imageUrl: z.string().trim().min(1, "imageUrl is required").url("imageUrl must be a valid URL"),
+        imageFileId: z
+            .string()
+            .trim()
+            .min(1, "imageFileId cannot be empty")
+            .regex(/^[a-zA-Z0-9_-]+$/, "imageFileId must be a valid ImageKit file ID")
+            .optional(),
         year: z
             .number({ message: "year must be a valid number" })
             .int("year must be an integer")

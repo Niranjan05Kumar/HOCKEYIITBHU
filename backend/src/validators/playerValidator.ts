@@ -25,6 +25,12 @@ export const playerBodySchema = z
     .object({
         name: z.string().trim().min(1, "Name is required"),
         profilePhoto: z.string().trim().url("Profile photo must be a valid URL").optional(),
+        profilePhotoFileId: z
+            .string()
+            .trim()
+            .min(1, "profilePhotoFileId cannot be empty")
+            .regex(/^[a-zA-Z0-9_-]+$/, "profilePhotoFileId must be a valid ImageKit file ID")
+            .optional(),
         playingPosition: z
             .enum(PLAYING_POSITIONS, {
                 message: "playingPosition must be one of: Forward, Defender, Midfielder, Goalkeeper",

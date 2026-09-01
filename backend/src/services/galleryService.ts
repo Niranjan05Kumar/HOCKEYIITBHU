@@ -1,5 +1,6 @@
 import { isValidObjectId, type SortOrder } from "mongoose";
 import GalleryItemModel from "../models/galleryItemModel.js";
+import { deleteImage } from "../services/imageService.js";
 import AppError from "../utils/appError.js";
 
 const GALLERY_CATEGORIES = [
@@ -16,6 +17,7 @@ const GALLERY_CATEGORIES = [
 
 export type GalleryItemCreateInput = {
     imageUrl: string;
+    imageFileId?: string;
     category: (typeof GALLERY_CATEGORIES)[number];
     year?: number;
     tournament?: string;
@@ -48,6 +50,7 @@ export const createGalleryItem = async (data: GalleryItemCreateInput) => {
 
     const item = await GalleryItemModel.create({
         imageUrl: data.imageUrl,
+        ...(data.imageFileId !== undefined ? { imageFileId: data.imageFileId } : {}),
         category: data.category,
         ...(data.year !== undefined ? { year: data.year } : {}),
         ...(data.tournament !== undefined ? { tournament: data.tournament } : {}),
@@ -126,9 +129,18 @@ export const updateGalleryItem = async (id: string, data: Partial<GalleryItemCre
         validateGalleryCategory(data.category);
     }
 
+    if (data.imageUrl !== undefined && data.imageUrl !== item.imageUrl && item.imageFileId) {
+        await deleteImage(item.imageFileId);
+    }
+
+    if (data.imageFileId !== undefined && data.imageFileId !== item.imageFileId && item.imageFileId) {
+        await deleteImage(item.imageFileId);
+    }
+
     const nextData: Partial<GalleryItemCreateInput> = {};
 
     if (data.imageUrl !== undefined) nextData.imageUrl = data.imageUrl;
+    if (data.imageFileId !== undefined) nextData.imageFileId = data.imageFileId;
     if (data.category !== undefined) nextData.category = data.category;
     if (data.year !== undefined) nextData.year = data.year;
     if (data.tournament !== undefined) nextData.tournament = data.tournament;
@@ -152,6 +164,10 @@ export const deleteGalleryItem = async (id: string) => {
 
     if (!item) {
         throw new AppError("Gallery item not found", 404);
+    }
+
+    if (item.imageFileId) {
+        await deleteImage(item.imageFileId);
     }
 
     await GalleryItemModel.findByIdAndDelete(id);

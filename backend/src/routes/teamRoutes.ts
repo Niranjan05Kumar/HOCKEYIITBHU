@@ -7,6 +7,7 @@ import {
     updateTeamController,
 } from "../controllers/teamController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { attachUploadedImage } from "../middleware/imageUploadMiddleware.js";
 import {
     validateTeamBody,
     validateTeamParams,
@@ -18,8 +19,21 @@ const router = Router();
 
 router.get("/", validateTeamQuery, getTeamsController);
 router.get("/:id", validateTeamParams, getTeamByIdController);
-router.post("/", validateTeamBody, authMiddleware, createTeamController);
-router.patch("/:id", validateTeamParams, validateTeamUpdate, authMiddleware, updateTeamController);
+router.post(
+    "/",
+    authMiddleware,
+    attachUploadedImage("teamPhotoFile", "teamPhoto", "teamPhotoFileId"),
+    validateTeamBody,
+    createTeamController,
+);
+router.patch(
+    "/:id",
+    authMiddleware,
+    attachUploadedImage("teamPhotoFile", "teamPhoto", "teamPhotoFileId"),
+    validateTeamParams,
+    validateTeamUpdate,
+    updateTeamController,
+);
 router.delete("/:id", validateTeamParams, authMiddleware, deleteTeamController);
 
 export default router;

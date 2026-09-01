@@ -32,6 +32,12 @@ export const teamBodySchema = z
         viceCaptain: objectIdSchema.optional(),
         coach: z.string().trim().min(1, "coach cannot be empty").optional(),
         teamPhoto: z.string().trim().url("teamPhoto must be a valid URL").optional(),
+        teamPhotoFileId: z
+            .string()
+            .trim()
+            .min(1, "teamPhotoFileId cannot be empty")
+            .regex(/^[a-zA-Z0-9_-]+$/, "teamPhotoFileId must be a valid ImageKit file ID")
+            .optional(),
         achievements: z.array(objectIdSchema).optional(),
     })
     .strict();

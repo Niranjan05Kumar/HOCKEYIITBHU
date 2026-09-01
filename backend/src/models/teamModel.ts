@@ -31,6 +31,10 @@ const teamSchema = new Schema(
             type: String,
             trim: true,
         },
+        teamPhotoFileId: {
+            type: String,
+            trim: true,
+        },
         achievements: {
             type: [
                 {

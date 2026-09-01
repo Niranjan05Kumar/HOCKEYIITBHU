@@ -3,6 +3,7 @@ import PlayerModel from "../models/playerModel.js";
 import TeamModel from "../models/teamModel.js";
 import TournamentEditionModel from "../models/tournamentEditionModel.js";
 import AchievementModel from "../models/achievementModel.js";
+import { deleteImage } from "../services/imageService.js";
 import AppError from "../utils/appError.js";
 
 const PLAYER_STATUSES = ["current", "former"] as const;
@@ -11,6 +12,7 @@ const PLAYING_POSITIONS = ["Forward", "Defender", "Midfielder", "Goalkeeper"] as
 export type PlayerCreateInput = {
     name: string;
     profilePhoto?: string;
+    profilePhotoFileId?: string;
     playingPosition?: (typeof PLAYING_POSITIONS)[number];
     status: (typeof PLAYER_STATUSES)[number];
     playingYears?: number[];
@@ -66,6 +68,7 @@ export const createPlayer = async (data: PlayerCreateInput) => {
     const player = await PlayerModel.create({
         name: data.name,
         ...(data.profilePhoto !== undefined ? { profilePhoto: data.profilePhoto } : {}),
+        ...(data.profilePhotoFileId !== undefined ? { profilePhotoFileId: data.profilePhotoFileId } : {}),
         ...(data.playingPosition !== undefined ? { playingPosition: data.playingPosition } : {}),
         status: data.status,
         ...(data.playingYears !== undefined ? { playingYears: data.playingYears } : {}),
@@ -153,6 +156,16 @@ export const updatePlayer = async (id: string, data: Partial<PlayerCreateInput>)
         validateObjectIdList(data.achievements, "achievements");
     }
 
+    if (data.profilePhoto !== undefined && data.profilePhoto !== player.profilePhoto && player.profilePhotoFileId) {
+        await deleteImage(player.profilePhotoFileId);
+    }
+
+    if (data.profilePhotoFileId !== undefined && data.profilePhotoFileId !== player.profilePhotoFileId) {
+        if (player.profilePhotoFileId && data.profilePhoto === undefined) {
+            await deleteImage(player.profilePhotoFileId);
+        }
+    }
+
     Object.assign(player, data);
     await player.save();
 
@@ -182,6 +195,10 @@ export const deletePlayer = async (id: string) => {
 
     if (teamReferences || editionReferences || achievementReferences) {
         throw new AppError("Cannot delete player because it is referenced by other records", 409);
+    }
+
+    if (player.profilePhotoFileId) {
+        await deleteImage(player.profilePhotoFileId);
     }
 
     await PlayerModel.findByIdAndDelete(id);
