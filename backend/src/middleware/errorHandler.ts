@@ -20,7 +20,9 @@ const codeFromStatus = (statusCode: number): string => {
     }
 };
 
-const errorHandler: ErrorRequestHandler = (error, _req, res, _next): void => {
+const errorHandler: ErrorRequestHandler = (error, _req, res, next): void => {
+    void next;
+    const isProduction = process.env.NODE_ENV === "production";
     let statusCode = 500;
     let message = "Internal server error";
     let details: Record<string, unknown> | undefined;
@@ -33,8 +35,27 @@ const errorHandler: ErrorRequestHandler = (error, _req, res, _next): void => {
         message = error.message;
     }
 
-    // Always log the error server-side for diagnostics
-    console.error(error);
+    if (error instanceof AppError) {
+        console.error({
+            name: error.name,
+            statusCode: error.statusCode,
+            message: error.message,
+            ...(error.details ? { details: error.details } : {}),
+        });
+    } else if (error instanceof Error) {
+        console.error({
+            name: error.name,
+            message: error.message,
+            ...(error.stack && !isProduction ? { stack: error.stack } : {}),
+        });
+    } else {
+        console.error({ error });
+    }
+
+    if (isProduction && statusCode >= 500) {
+        message = "Internal server error";
+        details = undefined;
+    }
 
     res.status(statusCode).json({
         success: false,

@@ -17,7 +17,7 @@ Contains:
 - Environment variables
 - `app.ts` and `server.ts`
 - Database configuration
-- Cloudinary configuration
+- ImageKit configuration
 - CORS
 - Helmet
 - Rate limiting
@@ -192,9 +192,9 @@ Authentication (admin only where required)
 Controller
 ```
 
-## 11. Cloudinary Integration
+## 11. ImageKit Integration
 Contains:
-- Cloudinary configuration
+- ImageKit configuration
 - Image upload
 - Image deletion
 - Image URL handling
@@ -208,7 +208,7 @@ Admin
 ↓
 Backend
 ↓
-Cloudinary
+ImageKit
 ↓
 Image URL
 ↓
@@ -307,7 +307,7 @@ Postman Collection
 Contains:
 - Production environment variables
 - Production MongoDB URI
-- Cloudinary production credentials
+- ImageKit production credentials
 - Production CORS origin
 - Production rate limits
 - Authentication configuration
@@ -322,7 +322,7 @@ Initial plan:
 ```text
 Backend  → Render
 Database → MongoDB Atlas
-Images   → Cloudinary
+Images   → ImageKit
 ```
 Contains:
 - GitHub integration
@@ -352,7 +352,7 @@ Also verify:
 - No unintended debug logging
 - Frontend reaches backend
 - Backend reaches MongoDB
-- Backend reaches Cloudinary
+- Backend reaches ImageKit
 
 ## 20. Backend Complete
 Complete:
@@ -370,24 +370,7 @@ Production Verification
 
 Then move to frontend development.
 
-## Current Project Position
-Already completed:
-- Backend setup and project structure
-- Dependencies
-- Environment configuration
-- TypeScript configuration
-- Prettier
-- ESLint
-- Express app/server
-- MongoDB connection
-- Git/GitHub setup
-
-## Immediate Next Coding Task
-```text
-Global 404 + Error-Handling Middleware
-```
-
-Then continue:
+Continue:
 ```text
 Error Handling
 ↓
@@ -409,7 +392,7 @@ Controllers
 ↓
 Routes
 ↓
-Cloudinary
+ImageKit
 ↓
 API Testing
 ↓

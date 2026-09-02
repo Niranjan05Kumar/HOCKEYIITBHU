@@ -1,9 +1,11 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import session from "express-session";
-import rateLimit from "express-rate-limit";
+import rateLimit, { type Options as RateLimitOptions } from "express-rate-limit";
+import AppError from "./utils/appError.js";
 import notFoundHandler from "./middleware/notFoundHandler.js";
 import errorHandler from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -17,40 +19,101 @@ import historyEventRoutes from "./routes/historyEventRoutes.js";
 import galleryItemRoutes from "./routes/galleryItemRoutes.js";
 
 const app = express();
-const sessionSecret = process.env.SESSION_SECRET || "development-session-secret";
+const isProduction = process.env.NODE_ENV === "production";
+const configuredOrigins =
+    process.env.CLIENT_URL
+        ?.split(",")
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0) ?? [];
+const defaultDevOrigins = ["http://localhost:5173", "http://localhost:3000"];
+const allowedOrigins = configuredOrigins.length > 0 ? configuredOrigins : isProduction ? [] : defaultDevOrigins;
+
+if (allowedOrigins.includes("*")) {
+    throw new Error("CLIENT_URL must not contain '*' when credentials are enabled");
+}
+
+if (isProduction && allowedOrigins.length === 0) {
+    throw new Error("CLIENT_URL must be configured in production");
+}
+
+const sessionSecretFromEnv = process.env.SESSION_SECRET?.trim();
+
+if (isProduction && !sessionSecretFromEnv) {
+    throw new Error("SESSION_SECRET must be configured in production");
+}
+
+const sessionSecret = sessionSecretFromEnv || randomBytes(32).toString("hex");
+
+const buildRateLimitHandler =
+    (message: string): NonNullable<RateLimitOptions["handler"]> =>
+    (_req, res, _next, options) => {
+        res.status(options.statusCode).json({
+            success: false,
+            error: {
+                code: "RATE_LIMIT_EXCEEDED",
+                message,
+            },
+        });
+    };
 
 app.use(helmet());
 
 app.use(
     cors({
-        origin: process.env.CLIENT_URL,
+        origin: (origin, callback) => {
+            if (!origin) {
+                callback(null, true);
+                return;
+            }
+
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+                return;
+            }
+
+            callback(new AppError("CORS origin is not allowed", 403));
+        },
         credentials: true,
+        methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
     }),
 );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+if (isProduction) {
+    app.set("trust proxy", 1);
+}
+
 app.use(
     session({
         secret: sessionSecret,
         name: process.env.SESSION_NAME || "hockey_iitbhu_sid",
+        proxy: isProduction,
         resave: false,
         saveUninitialized: false,
         cookie: {
             httpOnly: true,
             sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
+            secure: isProduction,
             maxAge: 1000 * 60 * 60 * 12,
         },
     }),
 );
 
+const globalRateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
+const globalRateLimitMax = Number(process.env.RATE_LIMIT_MAX || 100);
+
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs:
+        Number.isSafeInteger(globalRateLimitWindowMs) && globalRateLimitWindowMs > 0
+            ? globalRateLimitWindowMs
+            : 15 * 60 * 1000,
+    max: Number.isSafeInteger(globalRateLimitMax) && globalRateLimitMax > 0 ? globalRateLimitMax : 100,
     standardHeaders: true,
     legacyHeaders: false,
+    handler: buildRateLimitHandler("Too many requests, please try again later."),
 });
 
 app.use(limiter);
