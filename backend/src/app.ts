@@ -95,7 +95,7 @@ app.use(
         saveUninitialized: false,
         cookie: {
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: isProduction ? "none" : "lax",
             secure: isProduction,
             maxAge: 1000 * 60 * 60 * 12,
         },
