@@ -20,7 +20,7 @@ const codeFromStatus = (statusCode: number): string => {
     }
 };
 
-const errorHandler: ErrorRequestHandler = (error, _req, res): void => {
+const errorHandler: ErrorRequestHandler = (error, _req, res, _next): void => {
     let statusCode = 500;
     let message = "Internal server error";
     let details: Record<string, unknown> | undefined;
@@ -33,6 +33,7 @@ const errorHandler: ErrorRequestHandler = (error, _req, res): void => {
         message = error.message;
     }
 
+    // Always log the error server-side for diagnostics
     console.error(error);
 
     res.status(statusCode).json({
