@@ -1,52 +1,44 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, RotateCcw } from "lucide-react";
+import { getGalleryItems } from "@/api/gallery";
+import type { GalleryItem } from "@/types/gallery";
 
-interface VaultItem {
-    id: string;
-    title: string;
-    spanClass: string;
-    imageUrl: string;
-}
-
-const VAULT_ITEMS: VaultItem[] = [
-    {
-        id: "equipment-log",
-        title: "1940s Equipment Log",
-        spanClass: "col-span-1 row-span-2",
-        imageUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuCNpEeuuFa_W56uYt2SPyl5jsWWZXMxxUlIlVXP4qM8m4eQ7hNncfHRf8ETgVPo5nQhsnxNeBGOO9cNNYjrueGc85iLs3yfDc1_6HlKrrSr0t9SWDIAIpNFVk2KiceC6DeCqmnnCsgoqqCrwF2NgrxvIfYgqJ-EzE9wmwmmyqC3mu57sCf9ENkiVgwBbAZLTM2tW-ZLQQcK_tEG6xG_pkHxDYepdd45hiGGfPaFfm979w9tzTF_QueB",
-    },
-    {
-        id: "match-reports-1972",
-        title: "Match Reports: 1972",
-        spanClass: "col-span-1 row-span-1",
-        imageUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuCepIcWmwCvyTgzvzAqPZbKd0CCljoKLzMCmbfpBkoXgKRg3xUXfDZLuPeB-JV3nHuhn2MByepvFLikFm-ROTr619L3AhjlJDS1vBXwKCHsrs3GtBCzjCDlph95ur4qfzglymycJ5M-JG2Kk8rYVz56cumHVV7y7aJWrZvn-uzTM5FXS1n-lcbVooGx8iUlUZ8wTayYX3cotWJUxTJhdIsxij37RE7KDCL05k_bv3zKIi9lug_-MesZ",
-    },
-    {
-        id: "championship-crowds",
-        title: "Championship Crowds",
-        spanClass: "col-span-2 row-span-1",
-        imageUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuCOTcKlGBHzM2gd4AzY8pF0So21fPlzCyCiJdBX2i7Pe2j3F4dLZsmLDnBDNIYnqlEsYJXiGeFO37483Hzlwdqxk2uQE_3EBO7ti5ZJpMNuc9fFoVDrCe8bF49vCwaqj2ZnW8m9FX9qJWpCixJOFISgdJEFJ7LCd4HOBrWh7LEF3eWDXLQux9w_LnT8-Mt3vtTr8PtfA-XyeEf-O3rEb6l6g98IWXylQ-okbJQrI4usi4nrOuN1fyFH",
-    },
-    {
-        id: "the-grit",
-        title: "The Grit",
-        spanClass: "col-span-1 row-span-1",
-        imageUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuCVkaSET93wCzNJhr9nIOfqeMmpYBmrdhl9SOe0FVmFR2hi1Muq26HSQiuB4JLD95OB10JfKdf6OVgt3wgaAkBtZ956W7o3DPpOEjFZxPuJx0IaIHH8Kw_eG00podE2TqTIjA7yoWCqoC0xpzOcrR17WqOuhcl4CaquqlX73o5Jwdl30sGTADeAEOzi9sOxbnKUimazXUpsf-K1vwdwll-od-5bGLUxr3Nd19qIdlIGX6uz-rpkHw-8",
-    },
-    {
-        id: "class-of-85",
-        title: "Class of '85",
-        spanClass: "col-span-2 row-span-1",
-        imageUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuADwlgy5zzXhXejHSz_Yjy8XxQdySYWagiVDWBh5Am8ZiNmlt5mWv9ZrdiL1yCQTrqU5k-TYWLZvRwJpM3cZWJ3uFRLDpn5Ni-z7d0bNuk1feRBAsLIeNO-9Gekb1Uu3NKQK0aWL2NZo4DKYmzAfC2BAGf5fd7-8pcBper6aw4kzWwFRssA2HSfJCy3Sq5PKscOFAWZXA8zekTgMAWHpqPHi49eElbeNC2FL9pxHCDpI7EOsD6GXJKG",
-    },
+const MASONRY_SPAN_CLASSES = [
+    "col-span-1 row-span-2",
+    "col-span-1 row-span-1",
+    "col-span-2 row-span-1",
+    "col-span-1 row-span-1",
+    "col-span-2 row-span-1",
 ];
 
 export default function ArchivalVaultSection() {
+    const [items, setItems] = useState<GalleryItem[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchItems = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getGalleryItems({
+                limit: 5,
+                sort: "createdAt",
+                order: "desc",
+            });
+            setItems(response.data || []);
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to load gallery items from the server";
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void fetchItems();
+    }, [fetchItems]);
+
     return (
         <section className="py-16 md:py-24 px-4 sm:px-6 md:px-12 max-w-[1440px] mx-auto w-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
@@ -69,26 +61,76 @@ export default function ArchivalVaultSection() {
                 </Link>
             </div>
 
-            {/* Masonry Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[180px] sm:auto-rows-[200px]">
-                {VAULT_ITEMS.map((item) => (
-                    <article
-                        key={item.id}
-                        className={`${item.spanClass} bg-[#ECE8E1] p-3 border border-[rgba(26,26,26,0.08)] relative group overflow-hidden`}
-                    >
-                        <img
-                            src={item.imageUrl}
-                            alt={item.title}
-                            className="w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                            <span className="text-xs font-medium text-[#F4F1EA] tracking-wider uppercase">
-                                {item.title}
-                            </span>
+            {/* Loading Skeleton */}
+            {loading && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[180px] sm:auto-rows-[200px]">
+                    {MASONRY_SPAN_CLASSES.map((spanClass, idx) => (
+                        <div
+                            key={idx}
+                            className={`${spanClass} bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] animate-pulse p-3`}
+                        >
+                            <div className="w-full h-full bg-[#dcdad3]" />
                         </div>
-                    </article>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Error State */}
+            {!loading && error && (
+                <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] p-10 text-center max-w-xl mx-auto my-4">
+                    <ImageIcon className="w-8 h-8 text-[#5A181E] mx-auto mb-3 opacity-80" />
+                    <h3 className="text-base font-medium text-[#1A1A1A] mb-1">Unable to Load Archival Vault</h3>
+                    <p className="text-xs sm:text-sm text-[#6B665F] mb-5 leading-relaxed">{error}</p>
+                    <button
+                        type="button"
+                        onClick={fetchItems}
+                        className="px-6 py-2 border border-[#5A181E] text-[#5A181E] hover:bg-[#5A181E] hover:text-[#F4F1EA] rounded-full text-xs font-medium transition-colors inline-flex items-center gap-2"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Retry Connection
+                    </button>
+                </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && !error && items.length === 0 && (
+                <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-12 text-center max-w-xl mx-auto my-4">
+                    <ImageIcon className="w-8 h-8 text-[#5A181E] mx-auto mb-3 opacity-50" />
+                    <h3 className="text-base font-medium text-[#1A1A1A] mb-1">Archival Photographs Coming Soon</h3>
+                    <p className="text-xs sm:text-sm text-[#6B665F] leading-relaxed">
+                        Digitized match photographs, equipment archives, and team portraits will appear here as they are
+                        cataloged into the repository.
+                    </p>
+                </div>
+            )}
+
+            {/* Real Gallery Masonry Grid */}
+            {!loading && !error && items.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[180px] sm:auto-rows-[200px]">
+                    {items.map((item, index) => {
+                        const spanClass = MASONRY_SPAN_CLASSES[index % MASONRY_SPAN_CLASSES.length];
+                        const title = item.caption || item.eventName || item.category;
+
+                        return (
+                            <article
+                                key={item._id}
+                                className={`${spanClass} bg-[#ECE8E1] p-3 border border-[rgba(26,26,26,0.08)] relative group overflow-hidden`}
+                            >
+                                <img
+                                    src={item.imageUrl}
+                                    alt={title}
+                                    className="w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                                    <span className="text-xs font-medium text-[#F4F1EA] tracking-wider uppercase">
+                                        {title}
+                                    </span>
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+            )}
         </section>
     );
 }

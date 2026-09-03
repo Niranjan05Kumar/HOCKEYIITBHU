@@ -1,41 +1,41 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin } from "lucide-react";
-
-const SQUAD_PHOTO_URL =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAhCnJsvkUJFeW_GEedF4M3zOg5UM20QM3FyiAVUoc0Gt3MwcKjZbsBPa9MNV1GYSU6JiiyZzzzaohadSYZNWyePmhT89x2EADZtJUvB_RSWig-qH1rIxi4SY-yja0B-xfWGq-Xep9ZHo7v-yIRpHAkL44nVKI6O2Vfl0CYMxfTDnMujQ3hDAsErzR9I264cvcqShnRJDtkdC9EU1FK76J9HS0OLRgPRyCqDfqa9KMf5_MEOG1-jQDE";
-
-interface LeaderProfile {
-    role: string;
-    name: string;
-    detail: string;
-    avatarUrl: string;
-}
-
-const LEADERSHIP: LeaderProfile[] = [
-    {
-        role: "Captain",
-        name: "Rahul Sharma",
-        detail: "Midfielder • 4th Year",
-        avatarUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuARZAfs5lwiH4cq5wlfWK_bG2C_PQQt9HJiFsUV7dqgEaQBsGfZ9UmLC8rceYjCrff0CLxG4r-Vqec9-BIDLrSLjyoGsNioOALKuhEqmPGVCpfjKJuu7qaeQCpYbUvf-Bi3ygwzatBoGoZib61uXW7wRCYtvylpcCJiEs6r5EHoJQUUqRRqDfu7QlWS-15Tdy56iqTDy_3irK4yboo-YZSqRXatHFmkxlHkDf8kjOdq0v7y0_aL_Goi",
-    },
-    {
-        role: "Vice-Captain",
-        name: "Vikram Singh",
-        detail: "Defender • 3rd Year",
-        avatarUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuDO9CF398ndoYz9XYICa65s1IjWdtufRvffJmz2BKjavzXdrfnFuIuo01yZEjHGAZ-MryjzqS1gtqt-6nLMWLD6Den8s5RgQv7o6yKqR99VFd5D_W8xtwwHA9mS2JzzsNfRAhuF0StJYCtq1TJb0Y_pLXgyz9_4Xl6r5jDrEtgCykrOlNgl_OG8LMWftFEBsL80ZRJmm_zqMAuYUCQi9OHnCrcyUsyFEigDC0Hsh1LjAMLRRqasdE9n",
-    },
-    {
-        role: "Head Coach",
-        name: "Anil Kumar",
-        detail: "Alumnus, Class of '92",
-        avatarUrl:
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuDLXW3YTRAwQD1u7nK3CiarDndkxih4DumrS47Rx3-Cc7_5XPm1LtaaxjiwuBaBcpQe7OUex6DGt5eEzqgJi8FUtdA7mPwrhVGzGqEsztYzU54xfUk7-tlJuFRS9dz_2gQUhhsooRX5hF9MyRTm8UD17I2tzKQgm4VGtdU9sE2-yuoWBB2R6gfe-9-TbXUYhhRO0t6a4pv4zHnJOBiGqQ1h48kcUM2Q6XGPxf3jjF0BHwJUsBm8gkcg",
-    },
-];
+import { MapPin, Users, AlertCircle, RotateCcw } from "lucide-react";
+import { getTeams } from "@/api/teams";
+import type { Team } from "@/types/team";
 
 export default function SquadSpotlightSection() {
+    const [team, setTeam] = useState<Team | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchLatestTeam = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await getTeams({
+                limit: 1,
+                sort: "year",
+                order: "desc",
+            });
+            if (response.data && response.data.length > 0) {
+                setTeam(response.data[0]);
+            } else {
+                setTeam(null);
+            }
+        } catch (err: unknown) {
+            const errorMessage =
+                err instanceof Error ? err.message : "Failed to load varsity team information from the server";
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void fetchLatestTeam();
+    }, [fetchLatestTeam]);
+
     return (
         <section className="py-14 md:py-20 px-4 sm:px-6 md:px-12 bg-[#F1EEE7] border-y border-[rgba(26,26,26,0.08)]">
             <div className="max-w-[1440px] mx-auto">
@@ -46,63 +46,141 @@ export default function SquadSpotlightSection() {
                     <p className="text-sm text-[#6B665F]">Carrying the torch into the modern era.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    {/* Main Team Photo Card (8 Columns) */}
-                    <div className="md:col-span-8 bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] rounded-none p-4 md:p-6 flex flex-col justify-between">
-                        <div className="w-full aspect-video md:h-[400px] bg-[#dcdad3] relative mb-6 overflow-hidden">
-                            <img
-                                src={SQUAD_PHOTO_URL}
-                                alt="IIT (BHU) Varsity Field Hockey Team"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 px-2 pb-2">
-                            <div>
-                                <h3 className="text-xl sm:text-2xl font-medium text-[#1A1A1A] mb-1 tracking-tight">
-                                    2023-24 Varsity Squad
-                                </h3>
-                                <p className="text-sm text-[#6B665F] flex items-center gap-1.5">
-                                    <MapPin className="w-3.5 h-3.5 text-[#5A181E]" />
-                                    Rajputana Ground, Varanasi
-                                </p>
-                            </div>
-                            <Link
-                                to="/roster"
-                                className="px-6 py-2.5 border border-[rgba(26,26,26,0.25)] hover:border-[#5A181E] rounded-full text-xs sm:text-sm font-medium text-[#1A1A1A] hover:text-[#5A181E] hover:bg-[#E2DDD4] transition-colors self-start sm:self-auto text-center"
-                            >
-                                View Full Roster
-                            </Link>
-                        </div>
+                {/* Loading State */}
+                {loading && (
+                    <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-8 animate-pulse">
+                        <div className="w-full aspect-video md:h-[400px] bg-[#dcdad3] mb-6" />
+                        <div className="h-6 bg-[#dcdad3] rounded w-1/4 mb-2" />
+                        <div className="h-4 bg-[#dcdad3] rounded w-1/3" />
                     </div>
+                )}
 
-                    {/* Leadership Sidebar (4 Columns) */}
-                    <div className="md:col-span-4 flex flex-col gap-5 justify-between">
-                        {LEADERSHIP.map((leader) => (
-                            <div
-                                key={leader.role}
-                                className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-5 flex gap-4 items-center hover:bg-[#E2DDD4] transition-colors"
-                            >
-                                <div className="w-16 h-16 rounded-none bg-[#dcdad3] overflow-hidden shrink-0 border border-[rgba(26,26,26,0.12)]">
+                {/* Error State */}
+                {!loading && error && (
+                    <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] p-10 text-center max-w-xl mx-auto my-4">
+                        <AlertCircle className="w-8 h-8 text-[#5A181E] mx-auto mb-3 opacity-80" />
+                        <h3 className="text-base font-medium text-[#1A1A1A] mb-1">Unable to Load Squad Information</h3>
+                        <p className="text-xs sm:text-sm text-[#6B665F] mb-5 leading-relaxed">{error}</p>
+                        <button
+                            type="button"
+                            onClick={fetchLatestTeam}
+                            className="px-6 py-2 border border-[#5A181E] text-[#5A181E] hover:bg-[#5A181E] hover:text-[#F4F1EA] rounded-full text-xs font-medium transition-colors inline-flex items-center gap-2"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            Retry Connection
+                        </button>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && !team && (
+                    <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-12 text-center max-w-xl mx-auto my-4">
+                        <Users className="w-8 h-8 text-[#5A181E] mx-auto mb-3 opacity-50" />
+                        <h3 className="text-base font-medium text-[#1A1A1A] mb-1">
+                            No Active Varsity Squad Documented
+                        </h3>
+                        <p className="text-xs sm:text-sm text-[#6B665F] mb-6 leading-relaxed">
+                            Official team rosters, leadership assignments, and squad photography will appear here once
+                            registered.
+                        </p>
+                        <Link
+                            to="/roster"
+                            className="px-6 py-2.5 border border-[rgba(26,26,26,0.25)] hover:border-[#5A181E] rounded-full text-xs sm:text-sm font-medium text-[#1A1A1A] hover:text-[#5A181E] hover:bg-[#E2DDD4] transition-colors inline-block"
+                        >
+                            Explore Player Archive
+                        </Link>
+                    </div>
+                )}
+
+                {/* Real Team Data */}
+                {!loading && !error && team && (
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        {/* Main Team Photo Card (8 Columns) */}
+                        <div className="md:col-span-8 bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] rounded-none p-4 md:p-6 flex flex-col justify-between">
+                            <div className="w-full aspect-video md:h-[400px] bg-[#dcdad3] relative mb-6 overflow-hidden flex items-center justify-center">
+                                {team.teamPhoto ? (
                                     <img
-                                        src={leader.avatarUrl}
-                                        alt={leader.name}
-                                        className="w-full h-full object-cover grayscale"
+                                        src={team.teamPhoto}
+                                        alt={`${team.year} Varsity Squad`}
+                                        className="w-full h-full object-cover"
                                     />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-[#6B665F]">
+                                        <Users className="w-12 h-12 mb-2 text-[#5A181E]/40" />
+                                        <span className="text-sm uppercase tracking-widest font-semibold">
+                                            {team.year} Official Squad Portrait
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 px-2 pb-2">
+                                <div>
+                                    <h3 className="text-xl sm:text-2xl font-medium text-[#1A1A1A] mb-1 tracking-tight">
+                                        {team.year} Varsity Squad
+                                    </h3>
+                                    <p className="text-sm text-[#6B665F] flex items-center gap-1.5">
+                                        <MapPin className="w-3.5 h-3.5 text-[#5A181E]" />
+                                        Rajputana Ground, Varanasi
+                                    </p>
+                                </div>
+                                <Link
+                                    to="/roster"
+                                    className="px-6 py-2.5 border border-[rgba(26,26,26,0.25)] hover:border-[#5A181E] rounded-full text-xs sm:text-sm font-medium text-[#1A1A1A] hover:text-[#5A181E] hover:bg-[#E2DDD4] transition-colors self-start sm:self-auto text-center"
+                                >
+                                    View Full Roster ({team.players.length} Players)
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Leadership Sidebar (4 Columns) */}
+                        <div className="md:col-span-4 flex flex-col gap-5 justify-between">
+                            {team.coach && (
+                                <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-5 flex gap-4 items-center">
+                                    <div className="w-16 h-16 rounded-none bg-[#dcdad3] overflow-hidden shrink-0 border border-[rgba(26,26,26,0.12)] flex items-center justify-center">
+                                        <Users className="w-8 h-8 text-[#5A181E]/40" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[11px] font-semibold text-[#6B665F] uppercase tracking-wider block mb-1">
+                                            Head Coach
+                                        </span>
+                                        <h4 className="text-base font-medium text-[#1A1A1A] tracking-tight">
+                                            {team.coach}
+                                        </h4>
+                                        <span className="text-xs text-[#9C968D]">Varsity Coaching Staff</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-5 flex gap-4 items-center">
+                                <div className="w-16 h-16 rounded-none bg-[#dcdad3] overflow-hidden shrink-0 border border-[rgba(26,26,26,0.12)] flex items-center justify-center">
+                                    <Users className="w-8 h-8 text-[#5A181E]/40" />
                                 </div>
                                 <div>
                                     <span className="text-[11px] font-semibold text-[#6B665F] uppercase tracking-wider block mb-1">
-                                        {leader.role}
+                                        Active Roster
                                     </span>
                                     <h4 className="text-base font-medium text-[#1A1A1A] tracking-tight">
-                                        {leader.name}
+                                        {team.players.length} Selected Players
                                     </h4>
-                                    <span className="text-xs text-[#9C968D]">{leader.detail}</span>
+                                    <span className="text-xs text-[#9C968D]">Season {team.year}</span>
                                 </div>
                             </div>
-                        ))}
+
+                            <div className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-5 flex flex-col justify-center">
+                                <span className="text-[11px] font-semibold text-[#6B665F] uppercase tracking-wider block mb-1">
+                                    Archive Status
+                                </span>
+                                <h4 className="text-base font-medium text-[#1A1A1A] tracking-tight mb-2">
+                                    Verified Institutional Roster
+                                </h4>
+                                <Link to="/roster" className="text-xs font-medium text-[#5A181E] hover:underline">
+                                    Browse all varsity players &rarr;
+                                </Link>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </section>
     );

@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 import type { ApiErrorResponse } from "@/types/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 /**
  * Pre-configured Axios instance for the IIT (BHU) Hockey Platform API.
@@ -21,8 +21,13 @@ apiClient.interceptors.response.use(
     (error: AxiosError<ApiErrorResponse>) => {
         const errorData = error.response?.data;
         if (errorData && !errorData.success && errorData.error) {
+            let message = errorData.error.message || "An unexpected error occurred";
+            if (message.includes("SSL routines") || message.includes("SSL alert number 80")) {
+                message =
+                    "Database connection issue: MongoDB Atlas rejected the connection. Please ensure your IP address is whitelisted in MongoDB Atlas Network Access.";
+            }
             // Enhanced error message if structured error from backend exists
-            const customError = new Error(errorData.error.message || "An unexpected error occurred");
+            const customError = new Error(message);
             (customError as unknown as { code?: string; details?: unknown }).code = errorData.error.code;
             (customError as unknown as { code?: string; details?: unknown }).details = errorData.error.details;
             return Promise.reject(customError);
