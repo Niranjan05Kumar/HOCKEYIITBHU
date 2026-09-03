@@ -4,3 +4,4 @@ export * from "./team";
 export * from "./gallery";
 export * from "./achievement";
 export * from "./tournament";
+export * from "./player";
