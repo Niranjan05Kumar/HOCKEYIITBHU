@@ -1,13 +1,20 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "@/App";
+import PublicLayout from "@/components/common/PublicLayout";
+import Home from "@/pages/Home";
 
 /**
- * Base application router configuration.
- * Future pages and layouts will be registered here as features are developed.
+ * Application routing configuration.
+ * Public views are wrapped in PublicLayout with shared Header and Footer.
  */
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: <App />,
+        element: <PublicLayout />,
+        children: [
+            {
+                index: true,
+                element: <Home />,
+            },
+        ],
     },
 ]);
