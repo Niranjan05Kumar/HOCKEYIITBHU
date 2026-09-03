@@ -26,3 +26,30 @@ export interface TournamentQuery {
     sort?: "name" | "type" | "createdAt" | "updatedAt";
     order?: "asc" | "desc";
 }
+
+export interface TournamentEdition {
+    _id: string;
+    tournament: string;
+    year: number;
+    edition: string;
+    team: string;
+    hostInstitute?: string;
+    participatingTeams?: string[];
+    finalPosition?: number;
+    captain?: string;
+    viceCaptain?: string;
+    achievements?: string[];
+    awards?: string[];
+    photos?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface TournamentEditionQuery {
+    tournament?: string;
+    year?: number;
+    page?: number;
+    limit?: number;
+    sort?: "year" | "edition" | "createdAt" | "updatedAt";
+    order?: "asc" | "desc";
+}

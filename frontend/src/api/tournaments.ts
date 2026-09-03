@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
-import type { Tournament, TournamentQuery } from "@/types/tournament";
+import type { Tournament, TournamentEdition, TournamentEditionQuery, TournamentQuery } from "@/types/tournament";
 
 export const getTournaments = async (params?: TournamentQuery): Promise<ApiResponse<Tournament[]>> => {
     const response = await apiClient.get<ApiResponse<Tournament[]>>("/tournaments", { params });
@@ -9,5 +9,17 @@ export const getTournaments = async (params?: TournamentQuery): Promise<ApiRespo
 
 export const getTournamentById = async (id: string): Promise<ApiResponse<Tournament>> => {
     const response = await apiClient.get<ApiResponse<Tournament>>(`/tournaments/${id}`);
+    return response.data;
+};
+
+export const getTournamentEditions = async (
+    params?: TournamentEditionQuery,
+): Promise<ApiResponse<TournamentEdition[]>> => {
+    const response = await apiClient.get<ApiResponse<TournamentEdition[]>>("/tournament-editions", { params });
+    return response.data;
+};
+
+export const getTournamentEditionById = async (id: string): Promise<ApiResponse<TournamentEdition>> => {
+    const response = await apiClient.get<ApiResponse<TournamentEdition>>(`/tournament-editions/${id}`);
     return response.data;
 };
