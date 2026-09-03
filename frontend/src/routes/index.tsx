@@ -8,6 +8,7 @@ import Teams from "@/pages/Teams";
 import Roster from "@/pages/Roster";
 import PlayerProfile from "@/pages/PlayerProfile";
 import Gallery from "@/pages/Gallery";
+import TournamentEditionDetail from "@/pages/TournamentEditionDetail";
 
 /**
  * Application routing configuration.
@@ -36,17 +37,11 @@ export const router = createBrowserRouter([
             },
             {
                 path: "tournaments/:id/editions/:editionId",
-                element: (
-                    <main className="flex-grow pt-12 pb-16 px-4 md:px-16 max-w-[1440px] mx-auto w-full bg-[#F4F1EA]">
-                        <div className="bg-[#ECE8E1] p-12 border border-[rgba(26,26,26,0.08)] max-w-md mx-auto text-center space-y-4 my-12">
-                            <h2 className="text-xl font-medium text-[#3d030b]">Tournament Edition Detail</h2>
-                            <p className="text-xs text-[#6B665F]">
-                                Tournament Edition detail, matches, and participating squads will be implemented in the
-                                next milestone.
-                            </p>
-                        </div>
-                    </main>
-                ),
+                element: <TournamentEditionDetail />,
+            },
+            {
+                path: "tournament-editions/:editionId",
+                element: <TournamentEditionDetail />,
             },
             {
                 path: "teams",
