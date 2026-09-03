@@ -1,6 +1,7 @@
 export interface GalleryItem {
     _id: string;
     imageUrl: string;
+    imageFileId?: string;
     category: string;
     year?: number;
     tournament?: string;
@@ -15,8 +16,10 @@ export interface GalleryItem {
 export interface GalleryQuery {
     category?: string;
     year?: number;
+    tournament?: string;
+    player?: string;
     page?: number;
     limit?: number;
-    sort?: "year" | "createdAt" | "updatedAt";
+    sort?: "year" | "category" | "createdAt" | "updatedAt";
     order?: "asc" | "desc";
 }

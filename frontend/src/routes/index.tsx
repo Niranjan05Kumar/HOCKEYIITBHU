@@ -1,4 +1,4 @@
-import { createBrowserRouter, Link } from "react-router-dom";
+import { createBrowserRouter, Link, Navigate } from "react-router-dom";
 import PublicLayout from "@/components/common/PublicLayout";
 import Home from "@/pages/Home";
 import Achievements from "@/pages/Achievements";
@@ -7,6 +7,7 @@ import TournamentDetail from "@/pages/TournamentDetail";
 import Teams from "@/pages/Teams";
 import Roster from "@/pages/Roster";
 import PlayerProfile from "@/pages/PlayerProfile";
+import Gallery from "@/pages/Gallery";
 
 /**
  * Application routing configuration.
@@ -83,11 +84,15 @@ export const router = createBrowserRouter([
             },
             {
                 path: "players",
-                element: <Roster />,
+                element: <Navigate to="/roster" replace />,
             },
             {
                 path: "players/:id",
-                element: <PlayerProfile />,
+                element: <Navigate to="/roster" replace />,
+            },
+            {
+                path: "gallery",
+                element: <Gallery />,
             },
         ],
     },
