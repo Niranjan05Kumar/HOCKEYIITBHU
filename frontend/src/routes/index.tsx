@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import PublicLayout from "@/components/common/PublicLayout";
 import Home from "@/pages/Home";
+import Achievements from "@/pages/Achievements";
 
 /**
  * Application routing configuration.
@@ -14,6 +15,10 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <Home />,
+            },
+            {
+                path: "achievements",
+                element: <Achievements />,
             },
         ],
     },
