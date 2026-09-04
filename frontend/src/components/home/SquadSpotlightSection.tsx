@@ -103,6 +103,9 @@ export default function SquadSpotlightSection() {
                                         src={team.teamPhoto}
                                         alt={`${team.year} Varsity Squad`}
                                         className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = "none";
+                                        }}
                                     />
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center text-[#6B665F]">
@@ -128,7 +131,7 @@ export default function SquadSpotlightSection() {
                                     to="/roster"
                                     className="px-6 py-2.5 border border-[rgba(26,26,26,0.25)] hover:border-[#5A181E] rounded-full text-xs sm:text-sm font-medium text-[#1A1A1A] hover:text-[#5A181E] hover:bg-[#E2DDD4] transition-colors self-start sm:self-auto text-center"
                                 >
-                                    View Full Roster ({team.players.length} Players)
+                                    View Full Roster ({team.players?.length ?? 0} Players)
                                 </Link>
                             </div>
                         </div>

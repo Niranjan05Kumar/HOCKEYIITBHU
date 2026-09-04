@@ -80,6 +80,7 @@ export default function Header() {
                         onClick={() => setMobileOpen((prev) => !prev)}
                         className="md:hidden p-1.5 rounded-full border border-[rgba(26,26,26,0.15)] text-[#1A1A1A] hover:bg-[#ECE8E1] transition-colors"
                         aria-label="Toggle navigation menu"
+                        aria-expanded={mobileOpen}
                     >
                         {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                     </button>

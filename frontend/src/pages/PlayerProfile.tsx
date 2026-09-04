@@ -289,6 +289,9 @@ export default function PlayerProfile() {
                             <img
                                 src={photoUrl}
                                 alt={player.name}
+                                onError={(e) => {
+                                    e.currentTarget.src = ARCHIVAL_PORTRAIT_FALLBACKS[0];
+                                }}
                                 className="w-full h-full object-cover filter grayscale sepia-[.3] contrast-125 transition-all duration-500"
                             />
                         </div>

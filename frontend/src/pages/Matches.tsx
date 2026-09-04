@@ -343,6 +343,7 @@ export default function Matches() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search opponent or stage..."
+                            aria-label="Search opponent or tournament stage"
                             className="w-full bg-[#F4F1EA] border border-[rgba(26,26,26,0.15)] rounded-full pl-9 pr-4 py-1.5 text-xs text-[#1A1A1A] placeholder-[#9C968D] focus:outline-none focus:border-[#5A181E]"
                         />
                         {searchQuery && (

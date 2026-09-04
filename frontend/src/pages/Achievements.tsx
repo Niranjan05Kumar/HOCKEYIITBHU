@@ -375,6 +375,9 @@ export default function Achievements() {
                                     className="w-full h-full object-cover grayscale contrast-125"
                                     alt={spotlight.title}
                                     src={spotlight.photo || ARCHIVAL_PHOTO_FALLBACK}
+                                    onError={(e) => {
+                                        e.currentTarget.src = ARCHIVAL_PHOTO_FALLBACK;
+                                    }}
                                 />
                             </div>
                             <p className="mt-4 text-xs text-[#6B665F] border-t border-[rgba(26,26,26,0.08)] pt-2 text-right">
@@ -394,10 +397,10 @@ export default function Achievements() {
                             </h3>
                             <p className="text-sm text-[#1A1A1A] mb-6 leading-relaxed">{spotlight.description}</p>
                             <Link
-                                to="/history"
+                                to="/tournaments"
                                 className="border border-[#3d030b] text-[#3d030b] px-6 py-2.5 rounded-full text-xs font-medium hover:bg-[#3d030b] hover:text-[#F4F1EA] transition-colors self-start inline-block"
                             >
-                                View Archival Ledger &rarr;
+                                View Tournament Archives &rarr;
                             </Link>
                         </div>
                     </div>

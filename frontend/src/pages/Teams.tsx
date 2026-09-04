@@ -182,6 +182,7 @@ export default function Teams() {
                     <input
                         type="text"
                         placeholder="Search by year or captain..."
+                        aria-label="Search teams by year or captain"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 text-xs bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] rounded-full text-[#1A1A1A] placeholder-[#9C968D] focus:outline-none focus:border-[#5a181e] transition-colors"
@@ -315,6 +316,9 @@ export default function Teams() {
                                         <img
                                             src={photoUrl}
                                             alt={`${seasonLabel} IIT (BHU) Hockey Team`}
+                                            onError={(e) => {
+                                                e.currentTarget.src = ARCHIVAL_FALLBACK_PHOTOS[0];
+                                            }}
                                             className={`w-full h-full object-cover filter ${photoFilter} group-hover:scale-105 transition-transform duration-500`}
                                             loading="lazy"
                                         />

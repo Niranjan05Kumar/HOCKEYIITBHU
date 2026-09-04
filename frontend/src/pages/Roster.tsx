@@ -158,6 +158,7 @@ export default function Roster() {
                         <input
                             type="text"
                             placeholder="Search by name or jersey #..."
+                            aria-label="Search players by name or jersey number"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 text-xs bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded-none text-[#1A1A1A] placeholder-[#9C968D] focus:outline-none focus:border-[#5a181e] focus:ring-1 focus:ring-[#5a181e] transition-all"
@@ -357,6 +358,9 @@ export default function Roster() {
                                     <img
                                         src={photoUrl}
                                         alt={player.name}
+                                        onError={(e) => {
+                                            e.currentTarget.src = ARCHIVAL_PLAYER_PHOTOS[0];
+                                        }}
                                         className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500 border border-[rgba(26,26,26,0.1)]"
                                         loading="lazy"
                                     />

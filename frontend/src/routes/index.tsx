@@ -11,6 +11,7 @@ import Gallery from "@/pages/Gallery";
 import TournamentEditionDetail from "@/pages/TournamentEditionDetail";
 import Matches from "@/pages/Matches";
 import MatchDetail from "@/pages/MatchDetail";
+import NotFound from "@/pages/NotFound";
 
 /**
  * Application routing configuration.
@@ -98,6 +99,10 @@ export const router = createBrowserRouter([
             {
                 path: "matches/:id",
                 element: <MatchDetail />,
+            },
+            {
+                path: "*",
+                element: <NotFound />,
             },
         ],
     },
