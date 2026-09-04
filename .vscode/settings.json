@@ -1,3 +1,12 @@
 {
-    "css.lint.unknownAtRules": "ignore"
+    "css.lint.unknownAtRules": "ignore",
+    "remote.autoForwardPorts": false,
+    "remote.portsAttributes": {
+        "5173": {
+            "onAutoForward": "ignore"
+        },
+        "5000": {
+            "onAutoForward": "ignore"
+        }
+    }
 }

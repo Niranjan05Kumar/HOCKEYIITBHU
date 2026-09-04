@@ -19,6 +19,7 @@ export default defineConfig({
                 changeOrigin: true,
                 headers: {
                     Origin: "http://localhost:3000",
+                    "X-Forwarded-Proto": "https",
                 },
             },
         },

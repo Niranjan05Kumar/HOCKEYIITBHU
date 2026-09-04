@@ -87,3 +87,29 @@
             "calt" 1;
     }
 }
+
+@layer utilities {
+    .corner-decor::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        width: 6px;
+        height: 6px;
+        border-top: 1px solid #3d030b;
+        border-left: 1px solid #3d030b;
+        pointer-events: none;
+    }
+
+    .corner-decor::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 6px;
+        height: 6px;
+        border-bottom: 1px solid #3d030b;
+        border-right: 1px solid #3d030b;
+        pointer-events: none;
+    }
+}
