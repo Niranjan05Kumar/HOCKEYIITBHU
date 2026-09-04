@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
     { label: "Home", to: "/" },
     { label: "Achievements", to: "/achievements" },
     { label: "Tournaments", to: "/tournaments" },
+    { label: "Matches", to: "/matches" },
     { label: "Teams", to: "/teams" },
     { label: "Players", to: "/roster" },
     { label: "Gallery", to: "/gallery" },

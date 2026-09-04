@@ -17,6 +17,7 @@ import {
     Medal,
     Swords,
     Award,
+    ArrowRight,
 } from "lucide-react";
 import { getTournamentEditionById, getTournamentById } from "@/api/tournaments";
 import { getTeamById } from "@/api/teams";
@@ -603,11 +604,22 @@ export default function TournamentEditionDetail() {
                     <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                         {/* Main Match Progressions (8 Cols) */}
                         <div className="lg:col-span-8 space-y-4">
-                            <div className="flex items-center justify-between border-b border-[rgba(26,26,26,0.12)] pb-2 mb-6">
+                            <div className="flex flex-wrap items-center justify-between border-b border-[rgba(26,26,26,0.12)] pb-2 mb-6 gap-2">
                                 <h2 className="font-serif text-2xl text-[#3d030b] font-medium">
                                     Tournament Progression
                                 </h2>
-                                <span className="text-xs text-[#6B665F]">{matches.length} Documented Fixtures</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs text-[#6B665F]">{matches.length} Documented Fixtures</span>
+                                    {edition && (
+                                        <Link
+                                            to={`/matches?tournamentEditionId=${edition._id}`}
+                                            className="px-3 py-1 rounded-full text-xs font-medium border border-[rgba(26,26,26,0.18)] text-[#5A181E] hover:bg-[#5A181E] hover:text-white transition-colors inline-flex items-center gap-1"
+                                        >
+                                            <span>Open in Matches Archive</span>
+                                            <ArrowRight className="w-3 h-3" />
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
 
                             {matches.length === 0 && (
@@ -682,8 +694,8 @@ export default function TournamentEditionDetail() {
                                             </div>
                                         </div>
 
-                                        {/* Score & Result Pill */}
-                                        <div className="flex items-center gap-6 justify-end">
+                                        {/* Score & Result Pill & Link */}
+                                        <div className="flex items-center gap-4 md:gap-6 justify-end">
                                             <div className="text-center font-mono">
                                                 <span
                                                     className={`text-2xl font-bold tracking-tight ${
@@ -708,6 +720,15 @@ export default function TournamentEditionDetail() {
                                                 {match.result?.toUpperCase() ||
                                                     (isWin ? "WIN" : isDraw ? "DRAW" : "LOSS")}
                                             </span>
+
+                                            <Link
+                                                to={`/matches/${match._id}`}
+                                                className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-[rgba(26,26,26,0.18)] text-[#1A1A1A] hover:bg-[#5A181E] hover:text-white hover:border-[#5A181E] transition-colors"
+                                                title="View Match Record Dossier"
+                                            >
+                                                <span>Details</span>
+                                                <ArrowRight className="w-3 h-3" />
+                                            </Link>
                                         </div>
                                     </div>
                                 );

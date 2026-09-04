@@ -9,6 +9,8 @@ import Roster from "@/pages/Roster";
 import PlayerProfile from "@/pages/PlayerProfile";
 import Gallery from "@/pages/Gallery";
 import TournamentEditionDetail from "@/pages/TournamentEditionDetail";
+import Matches from "@/pages/Matches";
+import MatchDetail from "@/pages/MatchDetail";
 
 /**
  * Application routing configuration.
@@ -88,6 +90,14 @@ export const router = createBrowserRouter([
             {
                 path: "gallery",
                 element: <Gallery />,
+            },
+            {
+                path: "matches",
+                element: <Matches />,
+            },
+            {
+                path: "matches/:id",
+                element: <MatchDetail />,
             },
         ],
     },
