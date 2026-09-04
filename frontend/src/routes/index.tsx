@@ -13,11 +13,21 @@ import Matches from "@/pages/Matches";
 import MatchDetail from "@/pages/MatchDetail";
 import NotFound from "@/pages/NotFound";
 
+// Admin Views & Components
+import AdminLogin from "@/pages/admin/Login";
+import AdminDashboard from "@/pages/admin/Dashboard";
+import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
+import ProtectedRoute from "@/components/admin/ProtectedRoute";
+import AdminLayout from "@/components/admin/AdminLayout";
+
 /**
  * Application routing configuration.
- * Public views are wrapped in PublicLayout with shared Header and Footer.
+ * - Public views are wrapped in PublicLayout with shared Header and Footer.
+ * - Admin Login is transactional and renders without public or admin navigation shells.
+ * - Admin views are secured via ProtectedRoute and wrapped in AdminLayout.
  */
 export const router = createBrowserRouter([
+    // Public User Routes
     {
         path: "/",
         element: <PublicLayout />,
@@ -103,6 +113,117 @@ export const router = createBrowserRouter([
             {
                 path: "*",
                 element: <NotFound />,
+            },
+        ],
+    },
+
+    // Admin Authentication (Public Route)
+    {
+        path: "/admin/login",
+        element: <AdminLogin />,
+    },
+
+    // Protected Admin Routes
+    {
+        path: "/admin",
+        element: <ProtectedRoute />,
+        children: [
+            {
+                element: <AdminLayout />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="dashboard" replace />,
+                    },
+                    {
+                        path: "dashboard",
+                        element: <AdminDashboard />,
+                    },
+                    {
+                        path: "players",
+                        element: (
+                            <ModulePlaceholder
+                                title="Players"
+                                subtitle="Athlete Directory & Profiles"
+                                description="Manage varsity players, biographical dossiers, statistics, and alumni records."
+                            />
+                        ),
+                    },
+                    {
+                        path: "teams",
+                        element: (
+                            <ModulePlaceholder
+                                title="Teams"
+                                subtitle="Varsity Squad Registry"
+                                description="Manage annual varsity teams, coaching personnel, captains, and squad portraits."
+                            />
+                        ),
+                    },
+                    {
+                        path: "tournaments",
+                        element: (
+                            <ModulePlaceholder
+                                title="Tournament"
+                                subtitle="Competition Category Ledger"
+                                description="Manage sanctioned tournaments, institutional host categories, and governing bodies."
+                            />
+                        ),
+                    },
+                    {
+                        path: "tournament-editions",
+                        element: (
+                            <ModulePlaceholder
+                                title="Tournament Editions"
+                                subtitle="Seasonal Tournament Campaigns"
+                                description="Manage specific tournament editions, venues, championship years, and final standings."
+                            />
+                        ),
+                    },
+                    {
+                        path: "matches",
+                        element: (
+                            <ModulePlaceholder
+                                title="Matches"
+                                subtitle="Verified Fixture Dossiers"
+                                description="Manage individual match scorelines, opponent institutions, tournament rounds, and verified outcomes."
+                            />
+                        ),
+                    },
+                    {
+                        path: "achievements",
+                        element: (
+                            <ModulePlaceholder
+                                title="Achievements"
+                                subtitle="Honor & Distinction Registry"
+                                description="Manage medals, varsity trophies, championship banners, and curatorial spotlight awards."
+                            />
+                        ),
+                    },
+                    {
+                        path: "history",
+                        element: (
+                            <ModulePlaceholder
+                                title="History"
+                                subtitle="Chronological Milestone Archive"
+                                description="Manage historical defining moments, timeline event entries, and archival narratives."
+                            />
+                        ),
+                    },
+                    {
+                        path: "gallery",
+                        element: (
+                            <ModulePlaceholder
+                                title="Gallery"
+                                subtitle="Digitized Photographic Vault"
+                                description="Manage archival photography, image classification categories, and historical asset records."
+                            />
+                        ),
+                    },
+                    {
+                        path: "*",
+                        element: <Navigate to="dashboard" replace />,
+                    },
+                ],
             },
         ],
     },
