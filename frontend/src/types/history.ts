@@ -18,6 +18,18 @@ export interface HistoryEventQuery {
     category?: HistoryCategory;
     page?: number;
     limit?: number;
-    sort?: "year" | "title" | "createdAt" | "updatedAt";
+    sort?: "year" | "title" | "category" | "createdAt" | "updatedAt";
     order?: "asc" | "desc";
 }
+
+export interface HistoryEventCreateInput {
+    title: string;
+    description: string;
+    year: number;
+    category: HistoryCategory;
+    tournament?: string;
+    achievement?: string;
+    photo?: string;
+}
+
+export type HistoryEventUpdateInput = Partial<HistoryEventCreateInput>;

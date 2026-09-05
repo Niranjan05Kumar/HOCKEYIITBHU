@@ -21,6 +21,7 @@ import AdminTeams from "@/pages/admin/Teams";
 import AdminTournaments from "@/pages/admin/Tournaments";
 import AdminTournamentEditions from "@/pages/admin/TournamentEditions";
 import AdminMatches from "@/pages/admin/Matches";
+import AdminHistory from "@/pages/admin/History";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -177,13 +178,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "history",
-                        element: (
-                            <ModulePlaceholder
-                                title="History"
-                                subtitle="Chronological Milestone Archive"
-                                description="Manage historical defining moments, timeline event entries, and archival narratives."
-                            />
-                        ),
+                        element: <AdminHistory />,
                     },
                     {
                         path: "gallery",
