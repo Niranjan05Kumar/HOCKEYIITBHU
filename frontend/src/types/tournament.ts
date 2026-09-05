@@ -54,6 +54,23 @@ export interface TournamentEdition {
     updatedAt?: string;
 }
 
+export interface TournamentEditionCreateInput {
+    tournament: string;
+    year: number;
+    edition: string;
+    team: string;
+    hostInstitute?: string;
+    participatingTeams?: string[];
+    finalPosition?: number;
+    captain?: string;
+    viceCaptain?: string;
+    achievements?: string[];
+    awards?: string[];
+    photos?: string[];
+}
+
+export type TournamentEditionUpdateInput = Partial<TournamentEditionCreateInput>;
+
 export interface TournamentEditionQuery {
     tournament?: string;
     year?: number;

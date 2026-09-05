@@ -19,6 +19,7 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminPlayers from "@/pages/admin/Players";
 import AdminTeams from "@/pages/admin/Teams";
 import AdminTournaments from "@/pages/admin/Tournaments";
+import AdminTournamentEditions from "@/pages/admin/TournamentEditions";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -157,13 +158,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "tournament-editions",
-                        element: (
-                            <ModulePlaceholder
-                                title="Tournament Editions"
-                                subtitle="Seasonal Tournament Campaigns"
-                                description="Manage specific tournament editions, venues, championship years, and final standings."
-                            />
-                        ),
+                        element: <AdminTournamentEditions />,
                     },
                     {
                         path: "matches",

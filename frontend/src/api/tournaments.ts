@@ -4,7 +4,9 @@ import type {
     Tournament,
     TournamentCreateInput,
     TournamentEdition,
+    TournamentEditionCreateInput,
     TournamentEditionQuery,
+    TournamentEditionUpdateInput,
     TournamentQuery,
     TournamentUpdateInput,
 } from "@/types/tournament";
@@ -92,4 +94,35 @@ export const updateTournament = async (
  */
 export const deleteTournament = async (id: string): Promise<void> => {
     await apiClient.delete(`/tournaments/${id}`);
+};
+
+/**
+ * Create a new tournament edition.
+ * Maps to POST /api/v1/tournament-editions
+ */
+export const createTournamentEdition = async (
+    data: TournamentEditionCreateInput,
+): Promise<ApiResponse<TournamentEdition>> => {
+    const response = await apiClient.post<ApiResponse<TournamentEdition>>("/tournament-editions", data);
+    return response.data;
+};
+
+/**
+ * Update an existing tournament edition.
+ * Maps to PATCH /api/v1/tournament-editions/:id
+ */
+export const updateTournamentEdition = async (
+    id: string,
+    data: TournamentEditionUpdateInput,
+): Promise<ApiResponse<TournamentEdition>> => {
+    const response = await apiClient.patch<ApiResponse<TournamentEdition>>(`/tournament-editions/${id}`, data);
+    return response.data;
+};
+
+/**
+ * Delete a tournament edition.
+ * Maps to DELETE /api/v1/tournament-editions/:id
+ */
+export const deleteTournamentEdition = async (id: string): Promise<void> => {
+    await apiClient.delete(`/tournament-editions/${id}`);
 };
