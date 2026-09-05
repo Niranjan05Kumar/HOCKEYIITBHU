@@ -6,10 +6,24 @@ export interface Team {
     viceCaptain?: string;
     coach?: string;
     teamPhoto?: string;
+    teamPhotoFileId?: string;
     achievements?: string[];
     createdAt?: string;
     updatedAt?: string;
 }
+
+export type TeamCreateInput = {
+    year: number;
+    players: string[];
+    captain?: string;
+    viceCaptain?: string;
+    coach?: string;
+    teamPhoto?: string;
+    teamPhotoFileId?: string;
+    achievements?: string[];
+};
+
+export type TeamUpdateInput = Partial<TeamCreateInput>;
 
 export interface TeamQuery {
     year?: number;

@@ -17,6 +17,7 @@ import NotFound from "@/pages/NotFound";
 import AdminLogin from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminPlayers from "@/pages/admin/Players";
+import AdminTeams from "@/pages/admin/Teams";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -147,13 +148,7 @@ export const router = createBrowserRouter([
 
                     {
                         path: "teams",
-                        element: (
-                            <ModulePlaceholder
-                                title="Teams"
-                                subtitle="Varsity Squad Registry"
-                                description="Manage annual varsity teams, coaching personnel, captains, and squad portraits."
-                            />
-                        ),
+                        element: <AdminTeams />,
                     },
                     {
                         path: "tournaments",
