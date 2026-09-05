@@ -13,6 +13,18 @@ export interface Match {
     updatedAt?: string;
 }
 
+export interface MatchCreateInput {
+    tournamentEdition: string;
+    date?: string;
+    opponent: string;
+    iitBhuScore?: number;
+    opponentScore?: number;
+    result?: MatchResult;
+    round?: string;
+}
+
+export type MatchUpdateInput = Partial<MatchCreateInput>;
+
 export interface MatchQuery {
     tournamentEditionId?: string;
     page?: number;

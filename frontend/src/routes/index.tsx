@@ -20,6 +20,7 @@ import AdminPlayers from "@/pages/admin/Players";
 import AdminTeams from "@/pages/admin/Teams";
 import AdminTournaments from "@/pages/admin/Tournaments";
 import AdminTournamentEditions from "@/pages/admin/TournamentEditions";
+import AdminMatches from "@/pages/admin/Matches";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -162,13 +163,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "matches",
-                        element: (
-                            <ModulePlaceholder
-                                title="Matches"
-                                subtitle="Verified Fixture Dossiers"
-                                description="Manage individual match scorelines, opponent institutions, tournament rounds, and verified outcomes."
-                            />
-                        ),
+                        element: <AdminMatches />,
                     },
                     {
                         path: "achievements",
