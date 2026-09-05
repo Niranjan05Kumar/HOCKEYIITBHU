@@ -16,6 +16,7 @@ import NotFound from "@/pages/NotFound";
 // Admin Views & Components
 import AdminLogin from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminPlayers from "@/pages/admin/Players";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -141,14 +142,9 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "players",
-                        element: (
-                            <ModulePlaceholder
-                                title="Players"
-                                subtitle="Athlete Directory & Profiles"
-                                description="Manage varsity players, biographical dossiers, statistics, and alumni records."
-                            />
-                        ),
+                        element: <AdminPlayers />,
                     },
+
                     {
                         path: "teams",
                         element: (

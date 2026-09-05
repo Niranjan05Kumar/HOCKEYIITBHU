@@ -17,6 +17,21 @@ export interface Player {
     updatedAt?: string;
 }
 
+export interface PlayerCreateInput {
+    name: string;
+    playingPosition?: PlayingPosition;
+    status: PlayerStatus;
+    jerseyNumber?: number;
+    playingYears?: number[];
+    leadershipRoles?: string[];
+    achievements?: string[];
+    individualStatistics?: Record<string, unknown>;
+    profilePhoto?: string;
+    profilePhotoFileId?: string;
+}
+
+export type PlayerUpdateInput = Partial<PlayerCreateInput>;
+
 export interface PlayerQuery {
     status?: PlayerStatus;
     position?: PlayingPosition;
