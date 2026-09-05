@@ -18,6 +18,15 @@ export interface Tournament {
     updatedAt?: string;
 }
 
+export interface TournamentCreateInput {
+    name: string;
+    type: TournamentType | string;
+    description?: string;
+    logo?: string;
+}
+
+export type TournamentUpdateInput = Partial<TournamentCreateInput>;
+
 export interface TournamentQuery {
     name?: string;
     type?: string;

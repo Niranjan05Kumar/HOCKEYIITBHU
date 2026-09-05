@@ -18,6 +18,7 @@ import AdminLogin from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminPlayers from "@/pages/admin/Players";
 import AdminTeams from "@/pages/admin/Teams";
+import AdminTournaments from "@/pages/admin/Tournaments";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -152,13 +153,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "tournaments",
-                        element: (
-                            <ModulePlaceholder
-                                title="Tournament"
-                                subtitle="Competition Category Ledger"
-                                description="Manage sanctioned tournaments, institutional host categories, and governing bodies."
-                            />
-                        ),
+                        element: <AdminTournaments />,
                     },
                     {
                         path: "tournament-editions",
