@@ -1,8 +1,19 @@
+export type GalleryCategory =
+    | "SPARDHA"
+    | "Inter-IIT"
+    | "GC"
+    | "Out Fest"
+    | "Team Photos"
+    | "Match Photos"
+    | "Awards & Medal Celebrations"
+    | "Old/Archive Memories"
+    | "Other Memorable Moments";
+
 export interface GalleryItem {
     _id: string;
     imageUrl: string;
     imageFileId?: string;
-    category: string;
+    category: GalleryCategory;
     year?: number;
     tournament?: string;
     eventName?: string;
@@ -14,7 +25,7 @@ export interface GalleryItem {
 }
 
 export interface GalleryQuery {
-    category?: string;
+    category?: GalleryCategory | string;
     year?: number;
     tournament?: string;
     player?: string;
@@ -23,3 +34,17 @@ export interface GalleryQuery {
     sort?: "year" | "category" | "createdAt" | "updatedAt";
     order?: "asc" | "desc";
 }
+
+export interface GalleryItemCreateInput {
+    imageUrl?: string;
+    imageFileId?: string;
+    category: GalleryCategory;
+    year?: number;
+    tournament?: string;
+    eventName?: string;
+    caption?: string;
+    description?: string;
+    taggedPlayers?: string[];
+}
+
+export type GalleryItemUpdateInput = Partial<GalleryItemCreateInput>;

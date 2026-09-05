@@ -22,6 +22,7 @@ import AdminTournaments from "@/pages/admin/Tournaments";
 import AdminTournamentEditions from "@/pages/admin/TournamentEditions";
 import AdminMatches from "@/pages/admin/Matches";
 import AdminHistory from "@/pages/admin/History";
+import AdminGallery from "@/pages/admin/Gallery";
 import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -182,13 +183,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "gallery",
-                        element: (
-                            <ModulePlaceholder
-                                title="Gallery"
-                                subtitle="Digitized Photographic Vault"
-                                description="Manage archival photography, image classification categories, and historical asset records."
-                            />
-                        ),
+                        element: <AdminGallery />,
                     },
                     {
                         path: "*",
