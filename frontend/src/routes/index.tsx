@@ -21,9 +21,9 @@ import AdminTeams from "@/pages/admin/Teams";
 import AdminTournaments from "@/pages/admin/Tournaments";
 import AdminTournamentEditions from "@/pages/admin/TournamentEditions";
 import AdminMatches from "@/pages/admin/Matches";
+import AdminAchievements from "@/pages/admin/Achievements";
 import AdminHistory from "@/pages/admin/History";
 import AdminGallery from "@/pages/admin/Gallery";
-import ModulePlaceholder from "@/pages/admin/ModulePlaceholder";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminLayout from "@/components/admin/AdminLayout";
 
@@ -169,13 +169,7 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "achievements",
-                        element: (
-                            <ModulePlaceholder
-                                title="Achievements"
-                                subtitle="Honor & Distinction Registry"
-                                description="Manage medals, varsity trophies, championship banners, and curatorial spotlight awards."
-                            />
-                        ),
+                        element: <AdminAchievements />,
                     },
                     {
                         path: "history",

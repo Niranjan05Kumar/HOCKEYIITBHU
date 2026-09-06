@@ -15,6 +15,18 @@ export interface Achievement {
     updatedAt?: string;
 }
 
+export interface AchievementCreateInput {
+    title: string;
+    description?: string;
+    type: AchievementType;
+    year: number;
+    tournament?: string;
+    recipientType: RecipientType;
+    recipient: string;
+}
+
+export type AchievementUpdateInput = Partial<AchievementCreateInput>;
+
 export interface AchievementQuery {
     year?: number;
     type?: AchievementType;
