@@ -16,7 +16,6 @@ import {
     Award,
     Image as ImageIcon,
     Shield,
-    Download,
     Check,
     ChevronDown,
 } from "lucide-react";
@@ -511,49 +510,6 @@ export default function AdminTournamentEditions() {
     };
 
     // -------------------------------------------------------------------------
-    // Export to CSV Helper
-    // -------------------------------------------------------------------------
-    const handleExportCSV = () => {
-        if (filteredEditions.length === 0) return;
-        const headers = [
-            "Edition ID",
-            "Tournament",
-            "Edition",
-            "Year",
-            "Host Institute",
-            "Final Position",
-            "Fielded Squad (Team ID)",
-            "Captain",
-            "Participating Teams Count",
-        ];
-
-        const rows = filteredEditions.map((ed) => {
-            const tour = tournamentMap.get(ed.tournament)?.name || ed.tournament;
-            const cap = ed.captain ? playerMap.get(ed.captain)?.name || ed.captain : "None";
-            return [
-                `"${ed._id}"`,
-                `"${tour.replace(/"/g, '""')}"`,
-                `"${ed.edition.replace(/"/g, '""')}"`,
-                ed.year,
-                `"${(ed.hostInstitute || "-").replace(/"/g, '""')}"`,
-                ed.finalPosition || "Unspecified",
-                `"${ed.team}"`,
-                `"${cap.replace(/"/g, '""')}"`,
-                ed.participatingTeams?.length || 0,
-            ].join(",");
-        });
-
-        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `tournament_editions_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // -------------------------------------------------------------------------
     // Placement Badge Renderer
     // -------------------------------------------------------------------------
     const renderPlacementBadge = (pos?: number) => {
@@ -620,15 +576,6 @@ export default function AdminTournamentEditions() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={handleExportCSV}
-                            className="px-4 py-2 rounded-full border border-[rgba(26,26,26,0.2)] bg-white text-[#1A1A1A] text-xs font-medium hover:bg-[#ECE8E1] transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
-                        >
-                            <Download className="w-3.5 h-3.5 text-[#6B665F]" />
-                            <span>Export Ledger (.CSV)</span>
-                        </button>
-
                         <button
                             type="button"
                             onClick={fetchEditionsList}

@@ -12,7 +12,6 @@ import {
     RefreshCw,
     ChevronLeft,
     ChevronRight,
-    Download,
     Check,
     Info,
     Image as ImageIcon,
@@ -503,44 +502,6 @@ export default function AdminGallery() {
     };
 
     // -------------------------------------------------------------------------
-    // Export Catalog as CSV
-    // -------------------------------------------------------------------------
-    const exportCSV = () => {
-        if (filteredItems.length === 0) return;
-
-        const headers = [
-            "Year",
-            "Category",
-            "Event Name",
-            "Caption",
-            "Tournament",
-            "Tagged Players Count",
-            "Image URL",
-            "ImageKit File ID",
-        ];
-        const rows = filteredItems.map((item) => [
-            `"${item.year || ""}"`,
-            `"${item.category}"`,
-            `"${(item.eventName || "").replace(/"/g, '""')}"`,
-            `"${(item.caption || "").replace(/"/g, '""')}"`,
-            `"${resolveTournamentContext(item.tournament).replace(/"/g, '""')}"`,
-            `"${item.taggedPlayers?.length || 0}"`,
-            `"${item.imageUrl}"`,
-            `"${item.imageFileId || ""}"`,
-        ]);
-
-        const csvContent =
-            "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `IIT_BHU_Hockey_Media_Repository_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // -------------------------------------------------------------------------
     // Category Badge Styler
     // -------------------------------------------------------------------------
     const getCategoryBadgeClass = (category: string) => {
@@ -606,15 +567,6 @@ export default function AdminGallery() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0">
-                    <button
-                        type="button"
-                        onClick={exportCSV}
-                        disabled={filteredItems.length === 0}
-                        className="px-3.5 py-1.5 rounded-full border border-[rgba(26,26,26,0.15)] text-[#1A1A1A] hover:bg-[#E2DDD4] text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-40"
-                    >
-                        <Download className="w-3.5 h-3.5" />
-                        Export Catalog (.CSV)
-                    </button>
                     <button
                         type="button"
                         onClick={handleAddNew}

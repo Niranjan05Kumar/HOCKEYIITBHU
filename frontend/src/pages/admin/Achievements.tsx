@@ -13,7 +13,6 @@ import {
     ChevronLeft,
     ChevronRight,
     Trophy,
-    Download,
     Info,
     Image as ImageIcon,
     Users,
@@ -370,43 +369,6 @@ export default function AdminAchievements() {
     };
 
     // -------------------------------------------------------------------------
-    // Export Ledger CSV
-    // -------------------------------------------------------------------------
-    const handleExportCSV = () => {
-        if (achievements.length === 0) return;
-        const headers = ["Index", "Title", "Type", "Year", "Recipient Type", "Recipient", "Tournament", "Description"];
-        const rows = achievements.map((a, idx) => {
-            let recipientLabel = a.recipient;
-            if (a.recipientType === "Player") {
-                recipientLabel = playersMap.get(a.recipient)?.name || a.recipient;
-            } else {
-                const t = teamsMap.get(a.recipient);
-                recipientLabel = t ? `Men's Varsity Team (${t.year})` : a.recipient;
-            }
-            const tournamentLabel = a.tournament ? tournamentsMap.get(a.tournament)?.name || a.tournament : "N/A";
-            return [
-                idx + 1,
-                `"${a.title.replace(/"/g, '""')}"`,
-                `"${a.type}"`,
-                a.year,
-                `"${a.recipientType}"`,
-                `"${recipientLabel.replace(/"/g, '""')}"`,
-                `"${tournamentLabel.replace(/"/g, '""')}"`,
-                `"${(a.description || "").replace(/"/g, '""')}"`,
-            ].join(",");
-        });
-
-        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `iitbhu_hockey_achievements_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // -------------------------------------------------------------------------
     // Type Styling Helper
     // -------------------------------------------------------------------------
     const renderTypeBadge = (type: AchievementType) => {
@@ -548,15 +510,6 @@ export default function AdminAchievements() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                    <button
-                        type="button"
-                        onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full border border-[rgba(26,26,26,0.12)] text-[#1A1A1A] bg-[#fcf9f2] hover:bg-[#E2DDD4] text-xs font-medium transition-colors"
-                        title="Export current filtered view as CSV"
-                    >
-                        <Download className="w-4 h-4 text-[#6B665F]" />
-                        <span>Export Ledger (.CSV)</span>
-                    </button>
                     <button
                         type="button"
                         onClick={handleStartCreate}

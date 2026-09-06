@@ -13,7 +13,6 @@ import {
     ChevronLeft,
     ChevronRight,
     Trophy,
-    Download,
     Check,
     Info,
     Image as ImageIcon,
@@ -402,37 +401,6 @@ export default function AdminHistory() {
     };
 
     // -------------------------------------------------------------------------
-    // Export Timeline as CSV
-    // -------------------------------------------------------------------------
-    const exportCSV = () => {
-        if (filteredEvents.length === 0) return;
-
-        const headers = ["Year", "Title", "Category", "Description", "Tournament Context", "Achievement Ref", "Photo"];
-        const rows = filteredEvents.map((ev) => [
-            `"${ev.year}"`,
-            `"${ev.title.replace(/"/g, '""')}"`,
-            `"${ev.category}"`,
-            `"${ev.description.replace(/"/g, '""')}"`,
-            `"${resolveTournamentContext(ev.tournament).replace(/"/g, '""')}"`,
-            `"${ev.achievement || ""}"`,
-            `"${ev.photo || ""}"`,
-        ]);
-
-        const csvContent =
-            "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute(
-            "download",
-            `IIT_BHU_Hockey_Historical_Timeline_${new Date().toISOString().slice(0, 10)}.csv`,
-        );
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // -------------------------------------------------------------------------
     // Tag Helpers
     // -------------------------------------------------------------------------
     const handleAddTag = () => {
@@ -515,15 +483,6 @@ export default function AdminHistory() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0">
-                    <button
-                        type="button"
-                        onClick={exportCSV}
-                        disabled={filteredEvents.length === 0}
-                        className="px-3.5 py-1.5 rounded-full border border-[rgba(26,26,26,0.15)] text-[#1A1A1A] hover:bg-[#E2DDD4] text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-40"
-                    >
-                        <Download className="w-3.5 h-3.5" />
-                        Export Timeline (.CSV)
-                    </button>
                     <button
                         type="button"
                         onClick={handleAddNew}

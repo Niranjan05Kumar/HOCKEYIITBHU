@@ -14,7 +14,6 @@ import {
     ChevronRight,
     Trophy,
     Calendar,
-    Download,
     Check,
     ChevronDown,
     Info,
@@ -445,46 +444,6 @@ export default function AdminMatches() {
         );
     };
 
-    // -------------------------------------------------------------------------
-    // Export Ledger (.CSV) Helper
-    // -------------------------------------------------------------------------
-    const handleExportCSV = () => {
-        if (filteredMatches.length === 0) return;
-        const headers = [
-            "Match ID",
-            "Date",
-            "Tournament Edition",
-            "Opponent",
-            "IIT (BHU) Score",
-            "Opponent Score",
-            "Result",
-            "Round/Stage",
-        ];
-
-        const rows = filteredMatches.map((m) => {
-            const ed = editionMap.get(m.tournamentEdition)?.edition || m.tournamentEdition;
-            return [
-                `"${m._id}"`,
-                `"${m.date ? formatDate(m.date) : "N/A"}"`,
-                `"${ed.replace(/"/g, '""')}"`,
-                `"${m.opponent.replace(/"/g, '""')}"`,
-                m.iitBhuScore ?? "N/A",
-                m.opponentScore ?? "N/A",
-                m.result || "Unrecorded",
-                `"${(m.round || "General Fixture").replace(/"/g, '""')}"`,
-            ].join(",");
-        });
-
-        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `matches_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     return (
         <div className="min-h-screen bg-[#FCF9F2] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#3d030b] selection:text-white">
             {/* Top Sub-Header & Archival Action Anchor */}
@@ -507,15 +466,6 @@ export default function AdminMatches() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={handleExportCSV}
-                            className="px-4 py-2 rounded-full border border-[rgba(26,26,26,0.2)] bg-white text-[#1A1A1A] text-xs font-medium hover:bg-[#ECE8E1] transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
-                        >
-                            <Download className="w-3.5 h-3.5 text-[#6B665F]" />
-                            <span>Export Ledger (.CSV)</span>
-                        </button>
-
                         <button
                             type="button"
                             onClick={fetchMatchesList}
