@@ -16,8 +16,6 @@ import {
     Award,
     Image as ImageIcon,
     Shield,
-    Check,
-    ChevronDown,
 } from "lucide-react";
 import {
     getTournamentEditions,
@@ -41,6 +39,22 @@ import {
     PLACEMENT_OPTIONS,
     POPULAR_PARTICIPATING_TEAMS,
 } from "@/schemas/tournamentEditionSchema";
+import AdminSelect from "@/components/admin/AdminSelect";
+
+const ERA_FILTER_OPTIONS = [
+    { value: "all", label: "All Eras (1960–Present)" },
+    { value: "modern", label: "Modern Era (2010–Present)" },
+    { value: "transition", label: "Transition Era (1990–2009)" },
+    { value: "foundational", label: "Foundational Era (1960–1989)" },
+];
+
+const PLACEMENT_FILTER_OPTIONS = [
+    { value: "all", label: "All Placements" },
+    { value: "gold", label: "Champions / Gold Medal (1st)" },
+    { value: "silver", label: "Runners-Up / Silver (2nd)" },
+    { value: "bronze", label: "Bronze / 3rd Position" },
+    { value: "other", label: "Semi-Finalists & Others" },
+];
 
 export default function AdminTournamentEditions() {
     // -------------------------------------------------------------------------
@@ -93,16 +107,6 @@ export default function AdminTournamentEditions() {
     // Custom Participating Team Input
     const [customTeamInput, setCustomTeamInput] = useState<string>("");
 
-    // Searchable dropdown toggles
-    const [openTournamentSelect, setOpenTournamentSelect] = useState<boolean>(false);
-    const [tournamentSearch, setTournamentSearch] = useState<string>("");
-    const [openTeamSelect, setOpenTeamSelect] = useState<boolean>(false);
-    const [teamSearch, setTeamSearch] = useState<string>("");
-    const [openCaptainSelect, setOpenCaptainSelect] = useState<boolean>(false);
-    const [captainSearch, setCaptainSearch] = useState<string>("");
-    const [openViceCaptainSelect, setOpenViceCaptainSelect] = useState<boolean>(false);
-    const [viceCaptainSearch, setViceCaptainSearch] = useState<string>("");
-
     // -------------------------------------------------------------------------
     // React Hook Form Setup
     // -------------------------------------------------------------------------
@@ -135,9 +139,35 @@ export default function AdminTournamentEditions() {
     const watchedTeam = watch("team");
     const watchedCaptain = watch("captain");
     const watchedViceCaptain = watch("viceCaptain");
+    const watchedFinalPosition = watch("finalPosition");
     const watchedParticipatingTeams = watch("participatingTeams") || [];
     const watchedAchievements = watch("achievements") || [];
     const watchedPhotos = watch("photos") || [];
+
+    const tournamentOptions = useMemo(() => [
+        { value: "", label: "Select Tournament Circuit..." },
+        ...tournaments.map((t) => ({
+            value: t._id,
+            label: `${t.name} (${t.type})`,
+        })),
+    ], [tournaments]);
+
+    const teamOptions = useMemo(() => [
+        { value: "", label: "Select Fielded Varsity Team..." },
+        ...teams.map((tm) => ({
+            value: tm._id,
+            label: `IIT (BHU) Varsity Squad ${tm.year} (Players: ${tm.players.length || 0})${tm.coach ? ` • Coach: ${tm.coach}` : ""}`,
+        })),
+    ], [teams]);
+
+    const captainOptions = useMemo(() => [
+        { value: "", label: "None / Not Appointed" },
+        ...players.map((p) => ({
+            value: p._id,
+            label: `${p.name} (#${p.jerseyNumber ?? "N/A"})`,
+            sublabel: p.playingPosition || "Squad Member",
+        })),
+    ], [players]);
 
     // -------------------------------------------------------------------------
     // Catalog Dictionaries for Fast Lookups
@@ -332,6 +362,16 @@ export default function AdminTournamentEditions() {
             awards: [],
             photos: [],
         });
+    };
+
+    const handleReset = () => {
+        setFormSuccess(null);
+        setFormError(null);
+        if (selectedEdition) {
+            selectEditionForEdit(selectedEdition);
+        } else {
+            switchModeToCreate();
+        }
     };
 
     // -------------------------------------------------------------------------
@@ -556,46 +596,37 @@ export default function AdminTournamentEditions() {
 
     return (
         <div className="min-h-screen bg-[#FCF9F2] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#3d030b] selection:text-white">
-            {/* Top Sub-Header & Archival Action Anchor */}
-            <header className="px-6 md:px-10 py-6 bg-[#F4F1EA] border-b border-[rgba(26,26,26,0.08)]">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <span className="inline-block w-2 h-2 bg-[#3d030b]"></span>
-                            <span className="text-[11px] font-semibold tracking-widest text-[#6B665F] uppercase">
-                                Sanctioned Ledger Module
-                            </span>
-                        </div>
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#1A1A1A]">
-                            Tournament Editions &amp; Campaigns
-                        </h1>
-                        <p className="text-xs md:text-sm text-[#6B665F] mt-1 max-w-2xl">
-                            Document, verify, and curate annual competitive editions, fielded institute squads, host
-                            venues, and archival placements.
-                        </p>
-                    </div>
+            {/* Standardized Admin Page Header */}
+            <header className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#FCF9F2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] tracking-tight">
+                        Tournament Editions &amp; Campaigns
+                    </h1>
+                    <p className="text-xs md:text-sm text-[#6B665F] mt-1">
+                        Manage yearly tournament editions and results.
+                    </p>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={fetchEditionsList}
-                            disabled={loading}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs text-[#6B665F] hover:text-[#3d030b] border border-[rgba(26,26,26,0.12)] hover:border-[#3d030b] transition-all bg-[#ECE8E1] rounded-full disabled:opacity-50 cursor-pointer"
-                            title="Synchronize records"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                            <span className="tracking-tight uppercase font-medium text-[11px]">Sync</span>
-                        </button>
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={fetchEditionsList}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
+                        title="Synchronize records"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                        <span>SYNC</span>
+                    </button>
 
-                        <button
-                            type="button"
-                            onClick={switchModeToCreate}
-                            className="px-4 py-2 rounded-full bg-[#3d030b] text-[#F4F1EA] text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Add New Edition</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={switchModeToCreate}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3d030b] hover:bg-[#5a181e] text-[#F4F1EA] text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Edition</span>
+                    </button>
                 </div>
             </header>
 
@@ -626,7 +657,7 @@ export default function AdminTournamentEditions() {
             </div>
 
             {/* Main Two-Panel Workspace Grid */}
-            <main className="flex-1 p-6 md:p-10">
+            <main className="flex-1 p-6 md:p-12">
                 <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 items-start">
                     {/* ========================================================= */}
                     {/* LEFT PANEL: Tournament Editions Directory & Ledger (7/12) */}
@@ -695,33 +726,26 @@ export default function AdminTournamentEditions() {
                                     <span className="text-[11px] font-medium uppercase tracking-wider text-[#6B665F]">
                                         Era Bracket:
                                     </span>
-                                    <select
+                                    <AdminSelect
                                         value={eraFilter}
-                                        onChange={(e) => setEraFilter(e.target.value)}
-                                        className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] rounded px-2.5 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Eras (1960–Present)</option>
-                                        <option value="modern">Modern Era (2010–Present)</option>
-                                        <option value="transition">Transition Era (1990–2009)</option>
-                                        <option value="foundational">Foundational Era (1960–1989)</option>
-                                    </select>
+                                        onChange={(val) => setEraFilter(val)}
+                                        options={ERA_FILTER_OPTIONS}
+                                        placeholder="All Eras"
+                                        className="w-[180px]"
+                                    />
                                 </div>
 
                                 <div className="flex items-center gap-2">
                                     <span className="text-[11px] font-medium uppercase tracking-wider text-[#6B665F]">
                                         Placement:
                                     </span>
-                                    <select
+                                    <AdminSelect
                                         value={placementFilter}
-                                        onChange={(e) => setPlacementFilter(e.target.value)}
-                                        className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] rounded px-2.5 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Placements</option>
-                                        <option value="gold">Champions / Gold Medal (1st)</option>
-                                        <option value="silver">Runners-Up / Silver (2nd)</option>
-                                        <option value="bronze">Bronze / 3rd Position</option>
-                                        <option value="other">Semi-Finalists &amp; Others</option>
-                                    </select>
+                                        onChange={(val) => setPlacementFilter(val)}
+                                        options={PLACEMENT_FILTER_OPTIONS}
+                                        placeholder="All Placements"
+                                        className="w-[180px]"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -898,21 +922,6 @@ export default function AdminTournamentEditions() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Institutional Ledger Integrity Audit Card */}
-                        <div className="p-4 bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] flex gap-3 items-start">
-                            <Shield className="w-5 h-5 text-[#3d030b] shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="text-xs uppercase tracking-wider text-[#1A1A1A] font-semibold">
-                                    Institutional Ledger Integrity
-                                </h4>
-                                <p className="text-xs text-[#6B665F] mt-0.5 leading-relaxed">
-                                    Every tournament campaign must be backed by official convener scorecards or varsity
-                                    yearbooks. Modifying campaign records updates related team histories and player
-                                    varsity caps automatically.
-                                </p>
-                            </div>
-                        </div>
                     </div>
 
                     {/* ========================================================= */}
@@ -923,43 +932,17 @@ export default function AdminTournamentEditions() {
                             mobileTab === "list" ? "hidden xl:block" : "block"
                         }`}
                     >
-                        {/* Form Top Action Strip */}
-                        <div className="p-4 bg-[#EBE8E1] border-b border-[rgba(26,26,26,0.08)] flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span
-                                    className={`w-2.5 h-2.5 rounded-full inline-block ${
-                                        selectedEdition ? "bg-[#765a1a]" : "bg-emerald-600"
-                                    }`}
-                                ></span>
-                                <span className="text-xs uppercase tracking-wider font-bold text-[#1A1A1A]">
-                                    {selectedEdition
-                                        ? `Editing Edition — ${selectedEdition.edition}`
-                                        : "New Edition Dossier — Create Mode"}
+                        {selectedEdition && (
+                            <div className="p-4 bg-[#EBE8E1] border-b border-[rgba(26,26,26,0.08)] flex items-center">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
+                                    EDITING EDITION — {selectedEdition.edition.toUpperCase()}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={switchModeToCreate}
-                                    className="px-3 py-1 rounded-full border border-[rgba(26,26,26,0.2)] bg-[#FCF9F2] text-[#6B665F] text-xs hover:bg-[#E2DDD4] transition-colors cursor-pointer"
-                                >
-                                    {selectedEdition ? "New Mode" : "Reset"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSubmit(onSubmit)}
-                                    disabled={submitting}
-                                    className="px-3.5 py-1 rounded-full bg-[#3d030b] text-[#F4F1EA] text-xs font-semibold hover:bg-[#5a181e] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                >
-                                    {submitting && <RefreshCw className="w-3 h-3 animate-spin" />}
-                                    <span>{selectedEdition ? "Save Changes" : "Commit Record"}</span>
-                                </button>
-                            </div>
-                        </div>
+                        )}
 
                         {/* Dossier Subtitle Banner */}
                         <div className="p-4 bg-[#FCF9F2] border-b border-[rgba(26,26,26,0.06)]">
-                            <h3 className="text-sm font-semibold text-[#1A1A1A]">Edition Dossier</h3>
+                            <h2 className="text-lg font-serif text-[#1A1A1A] tracking-tight">Edition Dossier</h2>
                             <p className="text-xs text-[#6B665F] mt-0.5">
                                 Record sanctioned edition metadata, fielded varsity cohort, appointed captains, and
                                 final campaign honors.
@@ -996,75 +979,18 @@ export default function AdminTournamentEditions() {
 
                                 <div className="space-y-3.5">
                                     {/* Tournament Circuit Searchable Selector */}
-                                    <div className="relative">
+                                    <div>
                                         <label className="block text-[11px] uppercase tracking-wider text-[#6B665F] mb-1 font-semibold">
                                             Tournament Circuit / Host Championship *
                                         </label>
-                                        <div
-                                            onClick={() => setOpenTournamentSelect(!openTournamentSelect)}
-                                            className="w-full bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer hover:border-[#3d030b]"
-                                        >
-                                            <span className="truncate">
-                                                {watchedTournament && tournamentMap.get(watchedTournament)
-                                                    ? `${tournamentMap.get(watchedTournament)?.name} (${tournamentMap.get(watchedTournament)?.type})`
-                                                    : "Select Tournament Circuit..."}
-                                            </span>
-                                            <ChevronDown className="w-4 h-4 text-[#6B665F] shrink-0" />
-                                        </div>
-
-                                        {openTournamentSelect && (
-                                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded shadow-lg p-2 space-y-2 max-h-56 overflow-y-auto">
-                                                <div className="relative">
-                                                    <Search className="w-3.5 h-3.5 text-[#9C968D] absolute left-2 top-2 pointer-events-none" />
-                                                    <input
-                                                        type="text"
-                                                        value={tournamentSearch}
-                                                        onChange={(e) => setTournamentSearch(e.target.value)}
-                                                        placeholder="Search tournaments..."
-                                                        className="w-full pl-7 pr-2 py-1 text-xs bg-white border border-[rgba(26,26,26,0.12)] rounded focus:outline-none"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {tournaments
-                                                        .filter(
-                                                            (t) =>
-                                                                t.name
-                                                                    .toLowerCase()
-                                                                    .includes(tournamentSearch.toLowerCase()) ||
-                                                                t.type
-                                                                    .toLowerCase()
-                                                                    .includes(tournamentSearch.toLowerCase()),
-                                                        )
-                                                        .map((t) => (
-                                                            <div
-                                                                key={t._id}
-                                                                onClick={() => {
-                                                                    setValue("tournament", t._id, {
-                                                                        shouldValidate: true,
-                                                                    });
-                                                                    setOpenTournamentSelect(false);
-                                                                }}
-                                                                className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-[#ECE8E1] ${
-                                                                    watchedTournament === t._id
-                                                                        ? "bg-[#ECE8E1] font-semibold text-[#3d030b]"
-                                                                        : "text-[#1A1A1A]"
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div>{t.name}</div>
-                                                                    <div className="text-[10px] text-[#6B665F]">
-                                                                        {t.type}
-                                                                    </div>
-                                                                </div>
-                                                                {watchedTournament === t._id && (
-                                                                    <Check className="w-3.5 h-3.5 text-[#3d030b]" />
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                        <AdminSelect
+                                            value={watchedTournament || ""}
+                                            onChange={(val) => setValue("tournament", val, { shouldValidate: true })}
+                                            options={tournamentOptions}
+                                            placeholder="Select Tournament Circuit..."
+                                            searchable={true}
+                                            error={Boolean(errors.tournament)}
+                                        />
                                         {errors.tournament && (
                                             <p className="text-[11px] text-red-600 mt-1">{errors.tournament.message}</p>
                                         )}
@@ -1106,73 +1032,18 @@ export default function AdminTournamentEditions() {
                                     </div>
 
                                     {/* IIT (BHU) Team Cohort Searchable Selector */}
-                                    <div className="relative">
+                                    <div>
                                         <label className="block text-[11px] uppercase tracking-wider text-[#6B665F] mb-1 font-semibold">
                                             IIT (BHU) Team Cohort *
                                         </label>
-                                        <div
-                                            onClick={() => setOpenTeamSelect(!openTeamSelect)}
-                                            className="w-full bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer hover:border-[#3d030b]"
-                                        >
-                                            <span className="truncate">
-                                                {watchedTeam && teamMap.get(watchedTeam)
-                                                    ? `IIT (BHU) Varsity Squad ${teamMap.get(watchedTeam)?.year} (Players: ${teamMap.get(watchedTeam)?.players.length || 0})`
-                                                    : "Select Fielded Varsity Team..."}
-                                            </span>
-                                            <ChevronDown className="w-4 h-4 text-[#6B665F] shrink-0" />
-                                        </div>
-
-                                        {openTeamSelect && (
-                                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded shadow-lg p-2 space-y-2 max-h-56 overflow-y-auto">
-                                                <div className="relative">
-                                                    <Search className="w-3.5 h-3.5 text-[#9C968D] absolute left-2 top-2 pointer-events-none" />
-                                                    <input
-                                                        type="text"
-                                                        value={teamSearch}
-                                                        onChange={(e) => setTeamSearch(e.target.value)}
-                                                        placeholder="Search teams by year or coach..."
-                                                        className="w-full pl-7 pr-2 py-1 text-xs bg-white border border-[rgba(26,26,26,0.12)] rounded focus:outline-none"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {teams
-                                                        .filter(
-                                                            (tm) =>
-                                                                String(tm.year).includes(teamSearch) ||
-                                                                (tm.coach &&
-                                                                    tm.coach
-                                                                        .toLowerCase()
-                                                                        .includes(teamSearch.toLowerCase())),
-                                                        )
-                                                        .map((tm) => (
-                                                            <div
-                                                                key={tm._id}
-                                                                onClick={() => {
-                                                                    setValue("team", tm._id, { shouldValidate: true });
-                                                                    setOpenTeamSelect(false);
-                                                                }}
-                                                                className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-[#ECE8E1] ${
-                                                                    watchedTeam === tm._id
-                                                                        ? "bg-[#ECE8E1] font-semibold text-[#3d030b]"
-                                                                        : "text-[#1A1A1A]"
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div>IIT (BHU) Varsity Squad {tm.year}</div>
-                                                                    <div className="text-[10px] text-[#6B665F]">
-                                                                        Coach: {tm.coach || "Faculty Advisor"} •{" "}
-                                                                        {tm.players.length} Players
-                                                                    </div>
-                                                                </div>
-                                                                {watchedTeam === tm._id && (
-                                                                    <Check className="w-3.5 h-3.5 text-[#3d030b]" />
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                        <AdminSelect
+                                            value={watchedTeam || ""}
+                                            onChange={(val) => setValue("team", val, { shouldValidate: true })}
+                                            options={teamOptions}
+                                            placeholder="Select Fielded Varsity Team..."
+                                            searchable={true}
+                                            error={Boolean(errors.team)}
+                                        />
                                         {errors.team && (
                                             <p className="text-[11px] text-red-600 mt-1">{errors.team.message}</p>
                                         )}
@@ -1196,17 +1067,17 @@ export default function AdminTournamentEditions() {
                                             <label className="block text-[11px] uppercase tracking-wider text-[#6B665F] mb-1 font-semibold">
                                                 Final Position / Ranking
                                             </label>
-                                            <select
-                                                {...register("finalPosition")}
-                                                className="w-full bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                            >
-                                                <option value="">Unspecified / In Progress</option>
-                                                {PLACEMENT_OPTIONS.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <AdminSelect
+                                                value={watchedFinalPosition ? String(watchedFinalPosition) : ""}
+                                                onChange={(val) => setValue("finalPosition", val ? (Number(val) as any) : undefined, { shouldValidate: true })}
+                                                options={PLACEMENT_OPTIONS.map((opt) => ({
+                                                    value: String(opt.value),
+                                                    label: opt.label,
+                                                }))}
+                                                placeholder="Unspecified / In Progress"
+                                                allowClear={true}
+                                                clearLabel="Unspecified / In Progress"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -1225,167 +1096,35 @@ export default function AdminTournamentEditions() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {/* Fielded Captain Searchable Selector */}
-                                    <div className="relative">
+                                    <div>
                                         <label className="block text-[11px] uppercase tracking-wider text-[#6B665F] mb-1 font-semibold">
                                             Fielded Captain
                                         </label>
-                                        <div
-                                            onClick={() => setOpenCaptainSelect(!openCaptainSelect)}
-                                            className="w-full bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer hover:border-[#3d030b]"
-                                        >
-                                            <span className="truncate">
-                                                {watchedCaptain && playerMap.get(watchedCaptain)
-                                                    ? `${playerMap.get(watchedCaptain)?.name} (#${playerMap.get(watchedCaptain)?.jerseyNumber || "N/A"})`
-                                                    : "None / Not Appointed"}
-                                            </span>
-                                            <ChevronDown className="w-4 h-4 text-[#6B665F] shrink-0" />
-                                        </div>
-
-                                        {openCaptainSelect && (
-                                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded shadow-lg p-2 space-y-2 max-h-56 overflow-y-auto">
-                                                <div className="relative">
-                                                    <Search className="w-3.5 h-3.5 text-[#9C968D] absolute left-2 top-2 pointer-events-none" />
-                                                    <input
-                                                        type="text"
-                                                        value={captainSearch}
-                                                        onChange={(e) => setCaptainSearch(e.target.value)}
-                                                        placeholder="Search players..."
-                                                        className="w-full pl-7 pr-2 py-1 text-xs bg-white border border-[rgba(26,26,26,0.12)] rounded focus:outline-none"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <div
-                                                        onClick={() => {
-                                                            setValue("captain", "");
-                                                            setOpenCaptainSelect(false);
-                                                        }}
-                                                        className="px-2.5 py-1.5 rounded text-xs text-[#6B665F] hover:bg-[#ECE8E1] cursor-pointer"
-                                                    >
-                                                        None / Not Appointed
-                                                    </div>
-                                                    {players
-                                                        .filter(
-                                                            (p) =>
-                                                                p.name
-                                                                    .toLowerCase()
-                                                                    .includes(captainSearch.toLowerCase()) ||
-                                                                (p.playingPosition &&
-                                                                    p.playingPosition
-                                                                        .toLowerCase()
-                                                                        .includes(captainSearch.toLowerCase())),
-                                                        )
-                                                        .map((p) => (
-                                                            <div
-                                                                key={p._id}
-                                                                onClick={() => {
-                                                                    setValue("captain", p._id);
-                                                                    setOpenCaptainSelect(false);
-                                                                }}
-                                                                className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-[#ECE8E1] ${
-                                                                    watchedCaptain === p._id
-                                                                        ? "bg-[#ECE8E1] font-semibold text-[#3d030b]"
-                                                                        : "text-[#1A1A1A]"
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div>
-                                                                        {p.name} (#{p.jerseyNumber ?? "N/A"})
-                                                                    </div>
-                                                                    <div className="text-[10px] text-[#6B665F]">
-                                                                        {p.playingPosition || "Squad Member"}
-                                                                    </div>
-                                                                </div>
-                                                                {watchedCaptain === p._id && (
-                                                                    <Check className="w-3.5 h-3.5 text-[#3d030b]" />
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                        <AdminSelect
+                                            value={watchedCaptain || ""}
+                                            onChange={(val) => setValue("captain", val, { shouldValidate: true })}
+                                            options={captainOptions}
+                                            placeholder="None / Not Appointed"
+                                            searchable={true}
+                                            allowClear={true}
+                                            clearLabel="None / Not Appointed"
+                                        />
                                     </div>
 
                                     {/* Vice-Captain Searchable Selector */}
-                                    <div className="relative">
+                                    <div>
                                         <label className="block text-[11px] uppercase tracking-wider text-[#6B665F] mb-1 font-semibold">
                                             Vice-Captain
                                         </label>
-                                        <div
-                                            onClick={() => setOpenViceCaptainSelect(!openViceCaptainSelect)}
-                                            className="w-full bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer hover:border-[#3d030b]"
-                                        >
-                                            <span className="truncate">
-                                                {watchedViceCaptain && playerMap.get(watchedViceCaptain)
-                                                    ? `${playerMap.get(watchedViceCaptain)?.name} (#${playerMap.get(watchedViceCaptain)?.jerseyNumber || "N/A"})`
-                                                    : "None / Not Appointed"}
-                                            </span>
-                                            <ChevronDown className="w-4 h-4 text-[#6B665F] shrink-0" />
-                                        </div>
-
-                                        {openViceCaptainSelect && (
-                                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded shadow-lg p-2 space-y-2 max-h-56 overflow-y-auto">
-                                                <div className="relative">
-                                                    <Search className="w-3.5 h-3.5 text-[#9C968D] absolute left-2 top-2 pointer-events-none" />
-                                                    <input
-                                                        type="text"
-                                                        value={viceCaptainSearch}
-                                                        onChange={(e) => setViceCaptainSearch(e.target.value)}
-                                                        placeholder="Search players..."
-                                                        className="w-full pl-7 pr-2 py-1 text-xs bg-white border border-[rgba(26,26,26,0.12)] rounded focus:outline-none"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <div
-                                                        onClick={() => {
-                                                            setValue("viceCaptain", "");
-                                                            setOpenViceCaptainSelect(false);
-                                                        }}
-                                                        className="px-2.5 py-1.5 rounded text-xs text-[#6B665F] hover:bg-[#ECE8E1] cursor-pointer"
-                                                    >
-                                                        None / Not Appointed
-                                                    </div>
-                                                    {players
-                                                        .filter(
-                                                            (p) =>
-                                                                p.name
-                                                                    .toLowerCase()
-                                                                    .includes(viceCaptainSearch.toLowerCase()) ||
-                                                                (p.playingPosition &&
-                                                                    p.playingPosition
-                                                                        .toLowerCase()
-                                                                        .includes(viceCaptainSearch.toLowerCase())),
-                                                        )
-                                                        .map((p) => (
-                                                            <div
-                                                                key={p._id}
-                                                                onClick={() => {
-                                                                    setValue("viceCaptain", p._id);
-                                                                    setOpenViceCaptainSelect(false);
-                                                                }}
-                                                                className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-[#ECE8E1] ${
-                                                                    watchedViceCaptain === p._id
-                                                                        ? "bg-[#ECE8E1] font-semibold text-[#3d030b]"
-                                                                        : "text-[#1A1A1A]"
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div>
-                                                                        {p.name} (#{p.jerseyNumber ?? "N/A"})
-                                                                    </div>
-                                                                    <div className="text-[10px] text-[#6B665F]">
-                                                                        {p.playingPosition || "Squad Member"}
-                                                                    </div>
-                                                                </div>
-                                                                {watchedViceCaptain === p._id && (
-                                                                    <Check className="w-3.5 h-3.5 text-[#3d030b]" />
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                        <AdminSelect
+                                            value={watchedViceCaptain || ""}
+                                            onChange={(val) => setValue("viceCaptain", val, { shouldValidate: true })}
+                                            options={captainOptions}
+                                            placeholder="None / Not Appointed"
+                                            searchable={true}
+                                            allowClear={true}
+                                            clearLabel="None / Not Appointed"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -1637,22 +1376,29 @@ export default function AdminTournamentEditions() {
                                 </div>
                             </div>
 
-                            {/* Form Footer Buttons */}
-                            <div className="pt-4 border-t border-[rgba(26,26,26,0.08)] flex items-center justify-between">
+                            {/* Sticky Form Action Footer */}
+                            <div className="pt-4 border-t border-[rgba(26,26,26,0.08)] flex items-center justify-end space-x-3">
                                 <button
                                     type="button"
                                     onClick={switchModeToCreate}
-                                    className="px-4 py-2 rounded-full border border-[rgba(26,26,26,0.2)] text-[#6B665F] text-xs font-medium hover:bg-[#E2DDD4] transition-colors cursor-pointer"
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
                                 >
-                                    Reset Form
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
+                                >
+                                    Reset
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-[#F4F1EA] text-xs font-semibold hover:bg-[#5a181e] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-white text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                                 >
                                     {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>{selectedEdition ? "Commit Updates" : "Commit Record"}</span>
+                                    <span>{selectedEdition ? "Save Changes" : "Commit Record"}</span>
                                 </button>
                             </div>
                         </form>

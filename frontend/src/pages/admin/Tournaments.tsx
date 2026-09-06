@@ -27,6 +27,7 @@ import {
 } from "@/api/tournaments";
 import type { Tournament, TournamentCreateInput, TournamentEdition } from "@/types/tournament";
 import { tournamentFormSchema, type TournamentFormData, TOURNAMENT_TYPE_OPTIONS } from "@/schemas/tournamentSchema";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 export default function AdminTournaments() {
     // -------------------------------------------------------------------------
@@ -77,6 +78,7 @@ export default function AdminTournaments() {
         handleSubmit,
         reset,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<TournamentFormData>({
         resolver: zodResolver(tournamentFormSchema),
@@ -87,6 +89,8 @@ export default function AdminTournaments() {
             logo: "",
         },
     });
+
+    const watchedType = watch("type");
 
     // -------------------------------------------------------------------------
     // Data Fetching: Tournaments & Editions
@@ -207,6 +211,16 @@ export default function AdminTournaments() {
         }
     };
 
+    const handleReset = () => {
+        setFormSuccess(null);
+        setFormError(null);
+        if (selectedTournament) {
+            selectTournamentForEdit(selectedTournament);
+        } else {
+            switchModeToCreate();
+        }
+    };
+
     // -------------------------------------------------------------------------
     // Logo File Selection Handler
     // -------------------------------------------------------------------------
@@ -313,43 +327,35 @@ export default function AdminTournaments() {
 
     return (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F4F1EA]">
-            {/* Page Header matching Stitch Tournaments Management */}
-            <header className="border-b border-[rgba(26,26,26,0.08)] px-6 md:px-12 py-8 bg-[#F4F1EA]">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <div>
-                        <span className="text-[11px] md:text-[12px] uppercase tracking-widest font-semibold text-[#9C968D]">
-                            Institutional Records Registry
-                        </span>
-                        <h1 className="text-3xl md:text-[34px] font-medium text-[#3d030b] tracking-tight mt-1">
-                            Tournaments Directory &amp; Classification
-                        </h1>
-                        <p className="text-xs sm:text-sm text-[#6B665F] mt-1 max-w-3xl leading-relaxed">
-                            Manage sanctioned competitive tournament circuits, institutional categories, historical
-                            editions, and circuit crests in one unified ledger.
-                        </p>
-                    </div>
+            {/* Standardized Admin Page Header */}
+            <header className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#FCF9F2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] tracking-tight">
+                        Tournaments Directory &amp; Classification
+                    </h1>
+                    <p className="text-xs md:text-sm text-[#6B665F] mt-1">Manage tournament records and categories.</p>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={fetchTournamentsList}
-                            disabled={loading}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs text-[#6B665F] hover:text-[#3d030b] border border-[rgba(26,26,26,0.12)] hover:border-[#3d030b] transition-all bg-[#ECE8E1] disabled:opacity-50"
-                            title="Synchronize records"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                            <span className="tracking-tight uppercase font-medium text-[11px]">Sync</span>
-                        </button>
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={fetchTournamentsList}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
+                        title="Synchronize records"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                        <span>SYNC</span>
+                    </button>
 
-                        <button
-                            type="button"
-                            onClick={switchModeToCreate}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#3d030b] text-[#F4F1EA] hover:bg-[#5a181e] transition-colors shadow-xs"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Add New Tournament</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={switchModeToCreate}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3d030b] hover:bg-[#5a181e] text-[#F4F1EA] text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Tournament</span>
+                    </button>
                 </div>
             </header>
 
@@ -744,31 +750,14 @@ export default function AdminTournaments() {
                         >
                             {/* Dossier Form Header */}
                             <div className="border-b border-[rgba(26,26,26,0.08)] pb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
-                                        {selectedTournament
-                                            ? `EDITING TOURNAMENT — ID: ${selectedTournament._id.slice(-6).toUpperCase()}`
-                                            : "NEW RECORD — CREATE TOURNAMENT"}
-                                    </span>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            type="button"
-                                            onClick={switchModeToCreate}
-                                            className="px-3 py-1 rounded-full text-xs border border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:text-[#1A1A1A] bg-[#F4F1EA] transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={submitting}
-                                            className="px-4 py-1 rounded-full text-xs font-semibold bg-[#3d030b] text-white hover:bg-[#5a181e] transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                        >
-                                            {submitting && <RefreshCw className="w-3 h-3 animate-spin" />}
-                                            <span>Commit Record</span>
-                                        </button>
+                                {selectedTournament && (
+                                    <div className="flex items-center mb-2">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
+                                            EDITING TOURNAMENT — {selectedTournament.name.toUpperCase()}
+                                        </span>
                                     </div>
-                                </div>
-                                <h2 className="text-lg font-medium text-[#1A1A1A]">Tournament Dossier</h2>
+                                )}
+                                <h2 className="text-lg font-serif text-[#1A1A1A] tracking-tight">Tournament Dossier</h2>
                                 <p className="text-xs text-[#6B665F] mt-0.5">
                                     Configure competition circuit identity, regulatory category, permanent branding, and
                                     institutional notes.
@@ -814,16 +803,16 @@ export default function AdminTournaments() {
                                     <label className="block text-xs font-semibold text-[#1A1A1A] mb-1">
                                         Classification Category <span className="text-[#7A2E2E]">*</span>
                                     </label>
-                                    <select
-                                        {...register("type")}
-                                        className="w-full px-3 py-2 text-xs bg-[#F4F1EA] text-[#1A1A1A] border border-[rgba(26,26,26,0.1)] rounded focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        {TOURNAMENT_TYPE_OPTIONS.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <AdminSelect
+                                        value={watchedType}
+                                        onChange={(val) => setValue("type", val as any, { shouldValidate: true })}
+                                        options={TOURNAMENT_TYPE_OPTIONS.map((opt) => ({
+                                            value: opt.value,
+                                            label: opt.label,
+                                        }))}
+                                        placeholder="Select Classification Category"
+                                        error={Boolean(errors.type)}
+                                    />
                                     {errors.type && (
                                         <p className="text-[11px] text-[#7A2E2E] mt-1">{errors.type.message}</p>
                                     )}
@@ -991,17 +980,24 @@ export default function AdminTournaments() {
                                 <button
                                     type="button"
                                     onClick={switchModeToCreate}
-                                    className="px-4 py-2 border border-[rgba(26,26,26,0.12)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] bg-[#F4F1EA] transition-colors"
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
+                                >
+                                    Reset
+                                </button>
+                                <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-white text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center space-x-1.5 disabled:opacity-50"
+                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-white text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                                 >
                                     {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Save Changes / Commit Record</span>
+                                    <span>{selectedTournament ? "Save Changes" : "Commit Record"}</span>
                                 </button>
                             </div>
                         </form>

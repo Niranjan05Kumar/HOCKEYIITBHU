@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, Filter, AlertCircle, RotateCcw, Users, ArrowRight, X } from "lucide-react";
 import { getPlayers } from "@/api/players";
 import type { Player, PlayerQuery, PlayingPosition, PlayerStatus } from "@/types/player";
+import CustomSelect from "@/components/common/CustomSelect";
 
 const POSITIONS: Array<{ label: string; value: string }> = [
     { label: "All Positions", value: "ALL" },
@@ -167,11 +168,10 @@ export default function Roster() {
                     <button
                         type="button"
                         onClick={() => setFilterBarOpen((prev) => !prev)}
-                        className={`px-5 py-2 rounded-none border text-xs font-medium uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
-                            filterBarOpen || hasActiveFilters
+                        className={`px-5 py-2 rounded-none border text-xs font-medium uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${filterBarOpen || hasActiveFilters
                                 ? "bg-[#ECE8E1] border-[rgba(26,26,26,0.25)] text-[#1A1A1A]"
                                 : "bg-[#fcf9f2] border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:bg-[#E2DDD4]"
-                        }`}
+                            }`}
                     >
                         <Filter className="w-3.5 h-3.5" />
                         Filters
@@ -190,33 +190,30 @@ export default function Roster() {
                             <button
                                 type="button"
                                 onClick={() => setStatusFilter("ALL")}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                    statusFilter === "ALL"
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${statusFilter === "ALL"
                                         ? "bg-[#5a181e] text-[#F4F1EA]"
                                         : "bg-[#fcf9f2] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] text-[#1A1A1A]"
-                                }`}
+                                    }`}
                             >
                                 All
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setStatusFilter("current")}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                    statusFilter === "current"
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${statusFilter === "current"
                                         ? "bg-[#5a181e] text-[#F4F1EA]"
                                         : "bg-[#fcf9f2] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] text-[#1A1A1A]"
-                                }`}
+                                    }`}
                             >
                                 Current
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setStatusFilter("former")}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                    statusFilter === "former"
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${statusFilter === "former"
                                         ? "bg-[#5a181e] text-[#F4F1EA]"
                                         : "bg-[#fcf9f2] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] text-[#1A1A1A]"
-                                }`}
+                                    }`}
                             >
                                 Alumni
                             </button>
@@ -226,17 +223,12 @@ export default function Roster() {
                     {/* Position Filter */}
                     <div className="flex flex-col gap-2">
                         <label className="text-xs uppercase tracking-wider font-medium text-[#6B665F]">Position</label>
-                        <select
+                        <CustomSelect
                             value={positionFilter}
-                            onChange={(e) => setPositionFilter(e.target.value)}
-                            className="px-4 py-1.5 bg-[#fcf9f2] rounded-none border border-[rgba(26,26,26,0.12)] text-[#1A1A1A] text-xs focus:outline-none focus:border-[#5a181e] min-w-[150px]"
-                        >
-                            {POSITIONS.map((pos) => (
-                                <option key={pos.value} value={pos.value}>
-                                    {pos.label}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setPositionFilter(val)}
+                            options={POSITIONS}
+                            className="min-w-[170px]"
+                        />
                     </div>
 
                     {/* Era Filter */}
@@ -244,17 +236,12 @@ export default function Roster() {
                         <label className="text-xs uppercase tracking-wider font-medium text-[#6B665F]">
                             Era (Decade)
                         </label>
-                        <select
+                        <CustomSelect
                             value={eraFilter}
-                            onChange={(e) => setEraFilter(e.target.value)}
-                            className="px-4 py-1.5 bg-[#fcf9f2] rounded-none border border-[rgba(26,26,26,0.12)] text-[#1A1A1A] text-xs focus:outline-none focus:border-[#5a181e] min-w-[150px]"
-                        >
-                            {ERAS.map((era) => (
-                                <option key={era.value} value={era.value}>
-                                    {era.label}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setEraFilter(val)}
+                            options={ERAS}
+                            className="min-w-[170px]"
+                        />
                     </div>
 
                     {/* Active Filter Clear Action & Record Count */}
@@ -366,11 +353,10 @@ export default function Roster() {
                                     />
                                     {/* Status Pill Badge */}
                                     <div
-                                        className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[11px] font-medium uppercase tracking-wider ${
-                                            isCurrent
+                                        className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[11px] font-medium uppercase tracking-wider ${isCurrent
                                                 ? "bg-[#2D5A3D] text-white"
                                                 : "bg-[#ECE8E1] text-[#6B665F] border border-[rgba(26,26,26,0.12)]"
-                                        }`}
+                                            }`}
                                     >
                                         {isCurrent ? "Current" : "Alumni"}
                                     </div>

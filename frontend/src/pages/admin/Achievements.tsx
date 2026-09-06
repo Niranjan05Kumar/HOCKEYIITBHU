@@ -13,7 +13,6 @@ import {
     ChevronLeft,
     ChevronRight,
     Trophy,
-    Info,
     Image as ImageIcon,
     Users,
     User,
@@ -33,6 +32,35 @@ import type { Player } from "@/types/player";
 import type { Team } from "@/types/team";
 import type { GalleryItem } from "@/types/gallery";
 import { achievementFormSchema, type AchievementFormData, ACHIEVEMENT_TYPES } from "@/schemas/achievementSchema";
+import AdminSelect from "@/components/admin/AdminSelect";
+
+const ERA_FILTER_OPTIONS = [
+    { value: "all", label: "All Eras (1965 – 2026)" },
+    { value: "2020s", label: "2020 – 2026" },
+    { value: "2010s", label: "2010 – 2019" },
+    { value: "1990s", label: "1990 – 2009" },
+    { value: "pre-1990", label: "Pre-1990 Era" },
+];
+
+const RECIPIENT_FILTER_OPTIONS = [
+    { value: "all", label: "All Types" },
+    { value: "Team", label: "Varsity Squad / Team" },
+    { value: "Player", label: "Individual Player" },
+];
+
+const LIMIT_OPTIONS = [
+    { value: "10", label: "10 / page" },
+    { value: "20", label: "20 / page" },
+    { value: "50", label: "50 / page" },
+];
+
+const ACHIEVEMENT_TYPE_FORM_OPTIONS = [
+    { value: "Championship", label: "Championship Trophy" },
+    { value: "Medal", label: "Medal (Gold / Silver / Bronze)" },
+    { value: "Award", label: "Award / Commendation" },
+    { value: "Major Victory", label: "Major Victory / Milestone Win" },
+    { value: "Individual Achievement", label: "Individual Honor / Distinction" },
+];
 
 export default function AdminAchievements() {
     // -------------------------------------------------------------------------
@@ -69,7 +97,6 @@ export default function AdminAchievements() {
 
     // Recipient Entity Picker Dropdown open/close state
     const [isChangingRecipient, setIsChangingRecipient] = useState<boolean>(false);
-    const [recipientSearch, setRecipientSearch] = useState<string>("");
 
     // Associated Media Reference (from Gallery)
     const [selectedGalleryItem, setSelectedGalleryItem] = useState<GalleryItem | null>(null);
@@ -109,11 +136,40 @@ export default function AdminAchievements() {
 
     const watchedRecipientType = watch("recipientType");
     const watchedRecipient = watch("recipient");
+    const watchedType = watch("type");
+    const watchedTournament = watch("tournament");
 
     // Fast Lookup Dictionaries
     const tournamentsMap = useMemo(() => new Map(tournaments.map((t) => [t._id, t])), [tournaments]);
     const playersMap = useMemo(() => new Map(players.map((p) => [p._id, p])), [players]);
     const teamsMap = useMemo(() => new Map(teams.map((t) => [t._id, t])), [teams]);
+
+    const tournamentSelectOptions = useMemo(() => [
+        { value: "", label: "None / Non-Tournament Distinction" },
+        ...tournaments.map((t) => ({
+            value: t._id,
+            label: `${t.name} (${t.type || "Varsity Circuit"})`,
+        })),
+    ], [tournaments]);
+
+    const recipientEntityOptions = useMemo(() => {
+        if (watchedRecipientType === "Player") {
+            return players.map((player) => ({
+                value: player._id,
+                label: player.name,
+                sublabel: `${player.playingPosition || "Squad Member"}${player.jerseyNumber ? ` • #${player.jerseyNumber}` : ""}`,
+            }));
+        } else {
+            return teams.map((team) => {
+                const capt = team.captain ? playersMap.get(team.captain)?.name : null;
+                return {
+                    value: team._id,
+                    label: `Men's Varsity Team (${team.year})`,
+                    sublabel: `${capt ? `Capt. ${capt} • ` : ""}${team.players ? `${team.players.length} players` : ""}`,
+                };
+            });
+        }
+    }, [watchedRecipientType, players, teams, playersMap]);
 
     // -------------------------------------------------------------------------
     // Fetch Relational Catalogues
@@ -278,6 +334,16 @@ export default function AdminAchievements() {
         setMobileTab("form");
     }, [reset, teams, players]);
 
+    const handleReset = () => {
+        setFormSuccess(null);
+        setFormError(null);
+        if (selectedAchievement) {
+            handleSelectAchievement(selectedAchievement);
+        } else {
+            handleStartCreate();
+        }
+    };
+
     // When changing recipientType, adjust selected recipient if current one is invalid
     const handleRecipientTypeChange = (newType: RecipientType) => {
         setValue("recipientType", newType, { shouldValidate: true });
@@ -417,26 +483,7 @@ export default function AdminAchievements() {
         }
     };
 
-    // Filtered Players / Teams for the recipient dropdown
-    const filteredPlayers = useMemo(() => {
-        if (!recipientSearch.trim()) return players;
-        const q = recipientSearch.toLowerCase();
-        return players.filter(
-            (p) =>
-                p.name.toLowerCase().includes(q) ||
-                (p.playingPosition && p.playingPosition.toLowerCase().includes(q)) ||
-                (p.jerseyNumber && String(p.jerseyNumber).includes(q)),
-        );
-    }, [players, recipientSearch]);
 
-    const filteredTeams = useMemo(() => {
-        if (!recipientSearch.trim()) return teams;
-        const q = recipientSearch.toLowerCase();
-        return teams.filter((t) => {
-            const captainName = t.captain ? playersMap.get(t.captain)?.name.toLowerCase() || "" : "";
-            return String(t.year).includes(q) || captainName.includes(q);
-        });
-    }, [teams, recipientSearch, playersMap]);
 
     // Currently selected recipient summary
     const selectedRecipientDisplay = useMemo(() => {
@@ -461,810 +508,747 @@ export default function AdminAchievements() {
 
     return (
         <div className="flex flex-col min-h-screen bg-[#fcf9f2] text-[#1A1A1A]">
-            {/* Top Breadcrumb & Quick Action Bar */}
-            <header className="h-16 px-6 md:px-8 flex items-center justify-between bg-[#fcf9f2] border-b border-[rgba(26,26,26,0.08)] sticky top-0 z-20">
-                <div className="flex items-center gap-2 text-[#6B665F]">
-                    <span className="font-mono text-xs uppercase tracking-wider">ARCHIVE ADMIN</span>
-                    <span className="text-[#9C968D]">/</span>
-                    <span className="font-mono text-xs uppercase tracking-wider text-[#1A1A1A] font-semibold">
-                        ACHIEVEMENTS &amp; HONORS LEDGER
-                    </span>
-                </div>
-
-                {/* Mobile View Toggle Buttons */}
-                <div className="flex xl:hidden items-center gap-1 bg-[#ECE8E1] p-1 rounded-full border border-[rgba(26,26,26,0.08)]">
-                    <button
-                        type="button"
-                        onClick={() => setMobileTab("ledger")}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                            mobileTab === "ledger"
-                                ? "bg-[#3d030b] text-white shadow-sm"
-                                : "text-[#6B665F] hover:text-[#1A1A1A]"
-                        }`}
-                    >
-                        Archival Ledger ({totalRecords})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setMobileTab("form")}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                            mobileTab === "form"
-                                ? "bg-[#3d030b] text-white shadow-sm"
-                                : "text-[#6B665F] hover:text-[#1A1A1A]"
-                        }`}
-                    >
-                        {selectedAchievement ? "Dossier (Edit)" : "+ Ingest"}
-                    </button>
-                </div>
-            </header>
-
-            {/* Page Header Banner */}
-            <section className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#fcf9f2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Standardized Admin Page Header */}
+            <header className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#FCF9F2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] tracking-tight">
                         Achievements Register &amp; Honors
                     </h1>
-                    <p className="text-xs md:text-sm text-[#6B665F] mt-1 max-w-3xl">
-                        Archival ledger of institutional championships, medals, individual distinctions, and varsity
-                        awards across competitive eras.
-                    </p>
+                    <p className="text-xs md:text-sm text-[#6B665F] mt-1">Manage awards, honors, and distinctions.</p>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={fetchAchievementsList}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
+                        title="Synchronize records"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                        <span>SYNC</span>
+                    </button>
+
                     <button
                         type="button"
                         onClick={handleStartCreate}
-                        className="flex items-center gap-2 px-5 py-2 rounded-full bg-[#5a181e] text-white text-xs font-medium hover:bg-[#3d030b] transition-colors shadow-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3d030b] hover:bg-[#5a181e] text-[#F4F1EA] text-xs font-semibold transition-colors shadow-xs cursor-pointer"
                     >
                         <Plus className="w-4 h-4" />
-                        <span>+ Add New Achievement</span>
+                        <span>Add New Achievement</span>
                     </button>
                 </div>
-            </section>
+            </header>
 
-            {/* Two-Panel Workspace Grid */}
-            <main className="flex-1 p-6 md:p-8 grid grid-cols-12 gap-8 items-start">
-                {/* ========================================================= */}
-                {/* LEFT PANEL: Achievements Directory / Ledger (7 Columns)   */}
-                {/* ========================================================= */}
-                <section
-                    className={`col-span-12 xl:col-span-7 flex flex-col bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] shadow-sm ${
-                        mobileTab === "form" ? "hidden xl:flex" : "flex"
+            {/* Mobile Tab Switcher */}
+            <div className="xl:hidden flex border-b border-[rgba(26,26,26,0.08)] bg-[#ECE8E1] px-6">
+                <button
+                    type="button"
+                    onClick={() => setMobileTab("ledger")}
+                    className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer ${
+                        mobileTab === "ledger"
+                            ? "border-[#3d030b] text-[#3d030b]"
+                            : "border-transparent text-[#6B665F] hover:text-[#1A1A1A]"
                     }`}
                 >
-                    {/* Directory Header & Toolbar */}
-                    <div className="p-6 border-b border-[rgba(26,26,26,0.08)] bg-[#f6f3ec] flex flex-col gap-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Trophy className="w-5 h-5 text-[#3d030b]" />
-                                <h2 className="text-base font-serif font-bold text-[#1A1A1A]">Archival Ledger</h2>
+                    Archival Ledger ({totalRecords})
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setMobileTab("form")}
+                    className={`py-3 px-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors cursor-pointer ${
+                        mobileTab === "form"
+                            ? "border-[#3d030b] text-[#3d030b]"
+                            : "border-transparent text-[#6B665F] hover:text-[#1A1A1A]"
+                    }`}
+                >
+                    {selectedAchievement ? "Edit Dossier" : "New Dossier"}
+                </button>
+            </div>
+
+            {/* Main Two-Panel Workspace Grid */}
+            <main className="flex-1 p-6 md:p-12">
+                <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 items-start">
+                    {/* ========================================================= */}
+                    {/* LEFT PANEL: Achievements Directory / Ledger (7 Columns)   */}
+                    {/* ========================================================= */}
+                    <section
+                        className={`col-span-12 xl:col-span-7 flex flex-col bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] shadow-sm ${
+                            mobileTab === "form" ? "hidden xl:flex" : "flex"
+                        }`}
+                    >
+                        {/* Directory Header & Toolbar */}
+                        <div className="p-6 border-b border-[rgba(26,26,26,0.08)] bg-[#f6f3ec] flex flex-col gap-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-[#3d030b]" />
+                                    <h2 className="text-base font-serif font-semibold text-[#1A1A1A]">
+                                        Archival Ledger
+                                    </h2>
+                                </div>
+                                <span className="font-mono text-xs uppercase tracking-wider text-[#6B665F] bg-[#fcf9f2] px-3 py-1 rounded border border-[rgba(26,26,26,0.08)]">
+                                    {totalRecords} Verified Entries
+                                </span>
                             </div>
-                            <span className="font-mono text-xs uppercase tracking-wider text-[#6B665F] bg-[#fcf9f2] px-3 py-1 rounded border border-[rgba(26,26,26,0.08)]">
-                                {totalRecords} Verified Entries
-                            </span>
-                        </div>
 
-                        {/* Search Input */}
-                        <div className="relative w-full">
-                            <Search className="w-4 h-4 absolute left-3 top-3 text-[#9C968D]" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search achievements by title, recipient, or tournament..."
-                                className="w-full pl-9 pr-4 py-2 text-xs bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b]"
-                            />
-                            {searchQuery && (
+                            {/* Search Input */}
+                            <div className="relative w-full">
+                                <Search className="w-4 h-4 absolute left-3 top-3 text-[#9C968D]" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search achievements by title, recipient, or tournament..."
+                                    className="w-full pl-9 pr-4 py-2 text-xs bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b]"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery("")}
+                                        className="absolute right-3 top-2.5 text-[#9C968D] hover:text-[#1A1A1A]"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Quick Type Filter Pills */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
                                 <button
                                     type="button"
-                                    onClick={() => setSearchQuery("")}
-                                    className="absolute right-3 top-2.5 text-[#9C968D] hover:text-[#1A1A1A]"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Quick Type Filter Pills */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <button
-                                type="button"
-                                onClick={() => setTypeFilter("all")}
-                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                    typeFilter === "all"
-                                        ? "bg-[#3d030b] text-white"
-                                        : "bg-[#fcf9f2] text-[#6B665F] border border-[rgba(26,26,26,0.1)] hover:bg-[#E2DDD4]"
-                                }`}
-                            >
-                                All Accolades
-                            </button>
-                            {ACHIEVEMENT_TYPES.map((t) => (
-                                <button
-                                    key={t}
-                                    type="button"
-                                    onClick={() => setTypeFilter(t)}
+                                    onClick={() => setTypeFilter("all")}
                                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                        typeFilter === t
+                                        typeFilter === "all"
                                             ? "bg-[#3d030b] text-white"
                                             : "bg-[#fcf9f2] text-[#6B665F] border border-[rgba(26,26,26,0.1)] hover:bg-[#E2DDD4]"
                                     }`}
                                 >
-                                    {t}
+                                    All Accolades
                                 </button>
-                            ))}
-                        </div>
-
-                        {/* Secondary Filters Row: Year Range, Recipient Type, Reset */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[rgba(26,26,26,0.08)] text-xs">
-                            <div className="flex flex-wrap items-center gap-4">
-                                <div className="flex items-center gap-1.5">
-                                    <label className="font-mono text-[11px] text-[#6B665F] uppercase">
-                                        ERA / YEAR:
-                                    </label>
-                                    <select
-                                        value={eraFilter}
-                                        onChange={(e) => setEraFilter(e.target.value)}
-                                        className="bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded px-2.5 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
+                                {ACHIEVEMENT_TYPES.map((t) => (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => setTypeFilter(t)}
+                                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                            typeFilter === t
+                                                ? "bg-[#3d030b] text-white"
+                                                : "bg-[#fcf9f2] text-[#6B665F] border border-[rgba(26,26,26,0.1)] hover:bg-[#E2DDD4]"
+                                        }`}
                                     >
-                                        <option value="all">All Eras (1965 – 2026)</option>
-                                        <option value="2020s">2020 – 2026</option>
-                                        <option value="2010s">2010 – 2019</option>
-                                        <option value="1990s">1990 – 2009</option>
-                                        <option value="pre-1990">Pre-1990 Era</option>
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-1.5">
-                                    <label className="font-mono text-[11px] text-[#6B665F] uppercase">RECIPIENT:</label>
-                                    <select
-                                        value={recipientTypeFilter}
-                                        onChange={(e) => setRecipientTypeFilter(e.target.value)}
-                                        className="bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded px-2.5 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Types</option>
-                                        <option value="Team">Varsity Squad / Team</option>
-                                        <option value="Player">Individual Player</option>
-                                    </select>
-                                </div>
+                                        {t}
+                                    </button>
+                                ))}
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSearchQuery("");
-                                    setTypeFilter("all");
-                                    setEraFilter("all");
-                                    setRecipientTypeFilter("all");
-                                    setPage(1);
-                                }}
-                                className="text-xs text-[#6B665F] hover:text-[#1A1A1A] flex items-center gap-1 transition-colors"
-                            >
-                                <RefreshCw className="w-3.5 h-3.5" />
-                                <span>Reset Filters</span>
-                            </button>
-                        </div>
-                    </div>
+                            {/* Secondary Filters Row: Year Range, Recipient Type, Reset */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[rgba(26,26,26,0.08)] text-xs">
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <label className="font-mono text-[11px] text-[#6B665F] uppercase">
+                                            ERA / YEAR:
+                                        </label>
+                                        <AdminSelect
+                                            value={eraFilter}
+                                            onChange={(val) => {
+                                                setEraFilter(val);
+                                                setPage(1);
+                                            }}
+                                            options={ERA_FILTER_OPTIONS}
+                                            className="w-[180px]"
+                                        />
+                                    </div>
 
-                    {/* Table Area */}
-                    <div className="overflow-x-auto min-h-[360px]">
-                        {loading ? (
-                            <div className="p-12 flex flex-col items-center justify-center text-center">
-                                <RefreshCw className="w-8 h-8 text-[#3d030b] animate-spin mb-3" />
-                                <p className="text-xs font-medium text-[#6B665F]">Consulting Archival Database...</p>
-                            </div>
-                        ) : listError ? (
-                            <div className="p-12 text-center text-[#ba1a1a]">
-                                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-[#ba1a1a]" />
-                                <p className="text-sm font-semibold">{listError}</p>
+                                    <div className="flex items-center gap-1.5">
+                                        <label className="font-mono text-[11px] text-[#6B665F] uppercase">
+                                            RECIPIENT:
+                                        </label>
+                                        <AdminSelect
+                                            value={recipientTypeFilter}
+                                            onChange={(val) => {
+                                                setRecipientTypeFilter(val);
+                                                setPage(1);
+                                            }}
+                                            options={RECIPIENT_FILTER_OPTIONS}
+                                            className="w-[160px]"
+                                        />
+                                    </div>
+                                </div>
+
                                 <button
                                     type="button"
-                                    onClick={fetchAchievementsList}
-                                    className="mt-3 text-xs underline font-medium"
+                                    onClick={() => {
+                                        setSearchQuery("");
+                                        setTypeFilter("all");
+                                        setEraFilter("all");
+                                        setRecipientTypeFilter("all");
+                                        setPage(1);
+                                    }}
+                                    className="text-xs text-[#6B665F] hover:text-[#1A1A1A] flex items-center gap-1 transition-colors"
                                 >
-                                    Retry Ingestion Query
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    <span>Reset Filters</span>
                                 </button>
                             </div>
-                        ) : achievements.length === 0 ? (
-                            <div className="p-16 text-center text-[#6B665F]">
-                                <Trophy className="w-10 h-10 mx-auto mb-3 text-[#9C968D] opacity-40" />
-                                <h3 className="font-serif text-base font-bold text-[#1A1A1A]">No Achievements Found</h3>
-                                <p className="text-xs mt-1 max-w-sm mx-auto">
-                                    {searchQuery ||
-                                    typeFilter !== "all" ||
-                                    eraFilter !== "all" ||
-                                    recipientTypeFilter !== "all"
-                                        ? "No verified records match your active query filters. Try resetting filters."
-                                        : "No honors or championships are currently recorded. Click '+ Add New Achievement' to ingest the first entry."}
+                        </div>
+
+                        {/* Table Area */}
+                        <div className="overflow-x-auto min-h-[360px]">
+                            {loading ? (
+                                <div className="p-12 flex flex-col items-center justify-center text-center">
+                                    <RefreshCw className="w-8 h-8 text-[#3d030b] animate-spin mb-3" />
+                                    <p className="text-xs font-medium text-[#6B665F]">
+                                        Consulting Archival Database...
+                                    </p>
+                                </div>
+                            ) : listError ? (
+                                <div className="p-12 text-center text-[#ba1a1a]">
+                                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-[#ba1a1a]" />
+                                    <p className="text-sm font-semibold">{listError}</p>
+                                    <button
+                                        type="button"
+                                        onClick={fetchAchievementsList}
+                                        className="mt-3 text-xs underline font-medium"
+                                    >
+                                        Retry Ingestion Query
+                                    </button>
+                                </div>
+                            ) : achievements.length === 0 ? (
+                                <div className="p-16 text-center text-[#6B665F]">
+                                    <Trophy className="w-10 h-10 mx-auto mb-3 text-[#9C968D] opacity-40" />
+                                    <h3 className="font-serif text-base font-semibold text-[#1A1A1A]">
+                                        No Achievements Found
+                                    </h3>
+                                    <p className="text-xs mt-1 max-w-sm mx-auto">
+                                        {searchQuery ||
+                                        typeFilter !== "all" ||
+                                        eraFilter !== "all" ||
+                                        recipientTypeFilter !== "all"
+                                            ? "No verified records match your active query filters. Try resetting filters."
+                                            : "No honors or championships are currently recorded. Click '+ Add New Achievement' to ingest the first entry."}
+                                    </p>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-[rgba(26,26,26,0.08)] bg-[#f1eee7] font-mono text-[11px] text-[#6B665F] uppercase tracking-wider">
+                                            <th className="py-3 px-4 w-12 text-center">#</th>
+                                            <th className="py-3 px-4">Title &amp; Distinction</th>
+                                            <th className="py-3 px-4">Type</th>
+                                            <th className="py-3 px-4">Year</th>
+                                            <th className="py-3 px-4">Recipient</th>
+                                            <th className="py-3 px-4">Tournament / Circuit</th>
+                                            <th className="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[rgba(26,26,26,0.08)] text-xs bg-[#ECE8E1]">
+                                        {achievements.map((achievement, index) => {
+                                            const isSelected = selectedAchievement?._id === achievement._id;
+                                            const tournamentObj = achievement.tournament
+                                                ? tournamentsMap.get(achievement.tournament)
+                                                : null;
+
+                                            return (
+                                                <tr
+                                                    key={achievement._id}
+                                                    onClick={() => handleSelectAchievement(achievement)}
+                                                    className={`transition-colors cursor-pointer ${
+                                                        isSelected
+                                                            ? "bg-[#E2DDD4] border-l-4 border-l-[#3d030b]"
+                                                            : "hover:bg-[#E2DDD4]/60"
+                                                    }`}
+                                                >
+                                                    {/* # Index */}
+                                                    <td className="py-3.5 px-4 font-mono text-[#6B665F] text-center text-[11px]">
+                                                        {String((page - 1) * limit + index + 1).padStart(2, "0")}
+                                                    </td>
+
+                                                    {/* Title & Distinction */}
+                                                    <td className="py-3.5 px-4">
+                                                        <span className="font-semibold text-[#1A1A1A] block text-xs">
+                                                            {achievement.title}
+                                                        </span>
+                                                        <span className="text-[10px] font-mono text-[#6B665F]">
+                                                            Ref ID: ACH-{achievement._id.slice(-6).toUpperCase()}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Type Badge */}
+                                                    <td className="py-3.5 px-4 whitespace-nowrap">
+                                                        {renderTypeBadge(achievement.type)}
+                                                    </td>
+
+                                                    {/* Year */}
+                                                    <td className="py-3.5 px-4 font-mono font-medium text-[#1A1A1A]">
+                                                        {achievement.year}
+                                                    </td>
+
+                                                    {/* Recipient */}
+                                                    <td className="py-3.5 px-4 whitespace-nowrap">
+                                                        {achievement.recipientType === "Team" ? (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] bg-[#f1eee7] border border-[rgba(26,26,26,0.1)] text-[#1A1A1A]">
+                                                                <Users className="w-3.5 h-3.5 text-[#3d030b]" />
+                                                                <span>
+                                                                    {(() => {
+                                                                        const t = teamsMap.get(achievement.recipient);
+                                                                        return t
+                                                                            ? `Men's Varsity Squad (${t.year})`
+                                                                            : "Varsity Team";
+                                                                    })()}
+                                                                </span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] bg-[#f1eee7] border border-[rgba(26,26,26,0.1)] text-[#1A1A1A]">
+                                                                <User className="w-3.5 h-3.5 text-[#2D5A3D]" />
+                                                                <span>
+                                                                    {(() => {
+                                                                        const p = playersMap.get(achievement.recipient);
+                                                                        return p
+                                                                            ? `${p.name}${p.jerseyNumber ? ` (#${p.jerseyNumber})` : ""}`
+                                                                            : "Individual Player";
+                                                                    })()}
+                                                                </span>
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Tournament / Circuit */}
+                                                    <td className="py-3.5 px-4 text-[#6B665F] text-xs">
+                                                        {tournamentObj ? (
+                                                            <span className="font-medium text-[#1A1A1A]">
+                                                                {tournamentObj.name}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[#9C968D] italic">
+                                                                Institutional Distinction
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Row Actions */}
+                                                    <td
+                                                        className="py-3.5 px-4 text-right whitespace-nowrap"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSelectAchievement(achievement)}
+                                                                className={`p-1.5 rounded transition-colors ${
+                                                                    isSelected
+                                                                        ? "bg-[#3d030b] text-white"
+                                                                        : "text-[#6B665F] hover:bg-[#fcf9f2] hover:text-[#3d030b]"
+                                                                }`}
+                                                                title="Inspect / Edit Achievement"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAchievementToDelete(achievement)}
+                                                                className="p-1.5 rounded text-[#ba1a1a] hover:bg-[#ffdad6]/60 transition-colors"
+                                                                title="Delete Achievement"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        {/* Pagination Footer */}
+                        <div className="p-4 border-t border-[rgba(26,26,26,0.08)] bg-[#fcf9f2] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                            <span className="font-mono text-[11px] text-[#6B665F]">
+                                Showing {achievements.length > 0 ? (page - 1) * limit + 1 : 0} –{" "}
+                                {Math.min(page * limit, totalRecords)} of {totalRecords} verified records
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                                <AdminSelect
+                                    value={String(limit)}
+                                    onChange={(val) => {
+                                        setLimit(Number(val));
+                                        setPage(1);
+                                    }}
+                                    options={LIMIT_OPTIONS}
+                                    className="w-[110px]"
+                                />
+
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                                        disabled={page === 1}
+                                        className="p-1.5 rounded border border-[rgba(26,26,26,0.12)] bg-[#fcf9f2] hover:bg-[#E2DDD4] disabled:opacity-40 disabled:cursor-not-allowed text-[#1A1A1A]"
+                                    >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="px-2.5 py-1 rounded bg-[#3d030b] text-white font-mono text-xs font-semibold">
+                                        {page}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPage((p) => p + 1)}
+                                        disabled={page * limit >= totalRecords}
+                                        className="p-1.5 rounded border border-[rgba(26,26,26,0.12)] bg-[#fcf9f2] hover:bg-[#E2DDD4] disabled:opacity-40 disabled:cursor-not-allowed text-[#1A1A1A]"
+                                    >
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ========================================================= */}
+                    {/* RIGHT PANEL: Achievement Dossier Form (5 Columns)         */}
+                    {/* ========================================================= */}
+                    <section
+                        className={`col-span-12 xl:col-span-5 bg-[#fcf9f2] border border-[rgba(26,26,26,0.08)] flex flex-col shadow-sm ${
+                            mobileTab === "ledger" ? "hidden xl:flex" : "flex"
+                        }`}
+                    >
+                        {selectedAchievement && (
+                            <div className="p-4 border-b border-[rgba(26,26,26,0.08)] bg-[#f1eee7] flex items-center">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
+                                    EDITING ACHIEVEMENT — {selectedAchievement.title.toUpperCase()}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Feedback Messages */}
+                        {formSuccess && (
+                            <div className="mx-6 mt-6 p-3 bg-[#bceec8]/50 border border-[#a1d2ad] text-[#00210f] rounded flex items-center gap-2 text-xs">
+                                <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] flex-shrink-0" />
+                                <span>{formSuccess}</span>
+                            </div>
+                        )}
+                        {formError && (
+                            <div className="mx-6 mt-6 p-3 bg-[#ffdad6]/60 border border-[#ba1a1a]/30 text-[#93000a] rounded flex items-center gap-2 text-xs">
+                                <AlertTriangle className="w-4 h-4 text-[#ba1a1a] flex-shrink-0" />
+                                <span>{formError}</span>
+                            </div>
+                        )}
+
+                        {/* Form Container */}
+                        <form onSubmit={handleSubmit(onSubmit)} className="p-6 flex flex-col gap-6">
+                            {/* Dossier Title Header */}
+                            <div className="border-b border-[rgba(26,26,26,0.08)] pb-4">
+                                <h2 className="text-lg font-serif text-[#1A1A1A] tracking-tight">
+                                    Achievement Dossier
+                                </h2>
+                                <p className="text-xs text-[#6B665F] mt-0.5">
+                                    Record verified varsity honors, medals, and individual accolades for institutional
+                                    history.
                                 </p>
                             </div>
-                        ) : (
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-[rgba(26,26,26,0.08)] bg-[#f1eee7] font-mono text-[11px] text-[#6B665F] uppercase tracking-wider">
-                                        <th className="py-3 px-4 w-12 text-center">#</th>
-                                        <th className="py-3 px-4">Title &amp; Distinction</th>
-                                        <th className="py-3 px-4">Type</th>
-                                        <th className="py-3 px-4">Year</th>
-                                        <th className="py-3 px-4">Recipient</th>
-                                        <th className="py-3 px-4">Tournament / Circuit</th>
-                                        <th className="py-3 px-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[rgba(26,26,26,0.08)] text-xs bg-[#ECE8E1]">
-                                    {achievements.map((achievement, index) => {
-                                        const isSelected = selectedAchievement?._id === achievement._id;
-                                        const tournamentObj = achievement.tournament
-                                            ? tournamentsMap.get(achievement.tournament)
-                                            : null;
 
-                                        return (
-                                            <tr
-                                                key={achievement._id}
-                                                onClick={() => handleSelectAchievement(achievement)}
-                                                className={`transition-colors cursor-pointer ${
-                                                    isSelected
-                                                        ? "bg-[#E2DDD4] border-l-4 border-l-[#3d030b]"
-                                                        : "hover:bg-[#E2DDD4]/60"
-                                                }`}
-                                            >
-                                                {/* # Index */}
-                                                <td className="py-3.5 px-4 font-mono text-[#6B665F] text-center text-[11px]">
-                                                    {String((page - 1) * limit + index + 1).padStart(2, "0")}
-                                                </td>
-
-                                                {/* Title & Distinction */}
-                                                <td className="py-3.5 px-4">
-                                                    <span className="font-semibold text-[#1A1A1A] block text-xs">
-                                                        {achievement.title}
-                                                    </span>
-                                                    <span className="text-[10px] font-mono text-[#6B665F]">
-                                                        Ref ID: ACH-{achievement._id.slice(-6).toUpperCase()}
-                                                    </span>
-                                                </td>
-
-                                                {/* Type Badge */}
-                                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    {renderTypeBadge(achievement.type)}
-                                                </td>
-
-                                                {/* Year */}
-                                                <td className="py-3.5 px-4 font-mono font-medium text-[#1A1A1A]">
-                                                    {achievement.year}
-                                                </td>
-
-                                                {/* Recipient */}
-                                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    {achievement.recipientType === "Team" ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] bg-[#f1eee7] border border-[rgba(26,26,26,0.1)] text-[#1A1A1A]">
-                                                            <Users className="w-3.5 h-3.5 text-[#3d030b]" />
-                                                            <span>
-                                                                {(() => {
-                                                                    const t = teamsMap.get(achievement.recipient);
-                                                                    return t
-                                                                        ? `Men's Varsity Squad (${t.year})`
-                                                                        : "Varsity Team";
-                                                                })()}
-                                                            </span>
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] bg-[#f1eee7] border border-[rgba(26,26,26,0.1)] text-[#1A1A1A]">
-                                                            <User className="w-3.5 h-3.5 text-[#2D5A3D]" />
-                                                            <span>
-                                                                {(() => {
-                                                                    const p = playersMap.get(achievement.recipient);
-                                                                    return p
-                                                                        ? `${p.name}${p.jerseyNumber ? ` (#${p.jerseyNumber})` : ""}`
-                                                                        : "Individual Player";
-                                                                })()}
-                                                            </span>
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Tournament / Circuit */}
-                                                <td className="py-3.5 px-4 text-[#6B665F] text-xs">
-                                                    {tournamentObj ? (
-                                                        <span className="font-medium text-[#1A1A1A]">
-                                                            {tournamentObj.name}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[#9C968D] italic">
-                                                            Institutional Distinction
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                {/* Row Actions */}
-                                                <td
-                                                    className="py-3.5 px-4 text-right whitespace-nowrap"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleSelectAchievement(achievement)}
-                                                            className={`p-1.5 rounded transition-colors ${
-                                                                isSelected
-                                                                    ? "bg-[#3d030b] text-white"
-                                                                    : "text-[#6B665F] hover:bg-[#fcf9f2] hover:text-[#3d030b]"
-                                                            }`}
-                                                            title="Inspect / Edit Achievement"
-                                                        >
-                                                            <Edit2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setAchievementToDelete(achievement)}
-                                                            className="p-1.5 rounded text-[#ba1a1a] hover:bg-[#ffdad6]/60 transition-colors"
-                                                            title="Delete Achievement"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-
-                    {/* Pagination Footer */}
-                    <div className="p-4 border-t border-[rgba(26,26,26,0.08)] bg-[#fcf9f2] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                        <span className="font-mono text-[11px] text-[#6B665F]">
-                            Showing {achievements.length > 0 ? (page - 1) * limit + 1 : 0} –{" "}
-                            {Math.min(page * limit, totalRecords)} of {totalRecords} verified records
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                            <select
-                                value={limit}
-                                onChange={(e) => {
-                                    setLimit(Number(e.target.value));
-                                    setPage(1);
-                                }}
-                                className="bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded px-2 py-1 text-xs text-[#1A1A1A] focus:outline-none"
-                            >
-                                <option value={10}>10 / page</option>
-                                <option value={20}>20 / page</option>
-                                <option value={50}>50 / page</option>
-                            </select>
-
-                            <div className="flex items-center gap-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                                    disabled={page === 1}
-                                    className="p-1.5 rounded border border-[rgba(26,26,26,0.12)] bg-[#fcf9f2] hover:bg-[#E2DDD4] disabled:opacity-40 disabled:cursor-not-allowed text-[#1A1A1A]"
-                                >
-                                    <ChevronLeft className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="px-2.5 py-1 rounded bg-[#3d030b] text-white font-mono text-xs font-semibold">
-                                    {page}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => setPage((p) => p + 1)}
-                                    disabled={page * limit >= totalRecords}
-                                    className="p-1.5 rounded border border-[rgba(26,26,26,0.12)] bg-[#fcf9f2] hover:bg-[#E2DDD4] disabled:opacity-40 disabled:cursor-not-allowed text-[#1A1A1A]"
-                                >
-                                    <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Archival Integrity Notice */}
-                    <div className="p-4 bg-[#f6f3ec] border-t border-[rgba(26,26,26,0.08)] flex items-start gap-2.5 text-[11px] text-[#6B665F]">
-                        <Info className="w-4 h-4 text-[#765a1a] flex-shrink-0 mt-0.5" />
-                        <span>
-                            All records represent verified medals, championships, and individual awards cataloged in the
-                            IIT (BHU) Sports Council archives. Deleting a record is permanent and requires registrar
-                            confirmation.
-                        </span>
-                    </div>
-                </section>
-
-                {/* ========================================================= */}
-                {/* RIGHT PANEL: Achievement Dossier Form (5 Columns)         */}
-                {/* ========================================================= */}
-                <section
-                    className={`col-span-12 xl:col-span-5 bg-[#fcf9f2] border border-[rgba(26,26,26,0.08)] flex flex-col shadow-sm ${
-                        mobileTab === "ledger" ? "hidden xl:flex" : "flex"
-                    }`}
-                >
-                    {/* Header Context Badge & Quick Actions */}
-                    <div className="p-4 border-b border-[rgba(26,26,26,0.08)] bg-[#f1eee7] flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span
-                                className={`w-2 h-2 rounded-full ${
-                                    selectedAchievement ? "bg-[#765a1a]" : "bg-[#2D5A3D]"
-                                }`}
-                            ></span>
-                            <span className="font-mono text-xs uppercase tracking-wider text-[#1A1A1A] font-semibold">
-                                {selectedAchievement
-                                    ? `EDITING RECORD — ID: ACH-${selectedAchievement._id.slice(-6).toUpperCase()}`
-                                    : "NEW ARCHIVE INGESTION"}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {selectedAchievement && (
-                                <button
-                                    type="button"
-                                    onClick={handleStartCreate}
-                                    className="px-3 py-1 rounded-full text-xs text-[#6B665F] hover:bg-[#E2DDD4] transition-colors"
-                                >
-                                    Clear
-                                </button>
-                            )}
-                            <button
-                                type="button"
-                                onClick={handleSubmit(onSubmit)}
-                                disabled={submitting}
-                                className="px-4 py-1.5 rounded-full bg-[#5a181e] text-white text-xs font-medium hover:bg-[#3d030b] transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
-                            >
-                                {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                <span>{selectedAchievement ? "Commit Record" : "Save Record"}</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Feedback Messages */}
-                    {formSuccess && (
-                        <div className="mx-6 mt-6 p-3 bg-[#bceec8]/50 border border-[#a1d2ad] text-[#00210f] rounded flex items-center gap-2 text-xs">
-                            <CheckCircle2 className="w-4 h-4 text-[#2D5A3D] flex-shrink-0" />
-                            <span>{formSuccess}</span>
-                        </div>
-                    )}
-                    {formError && (
-                        <div className="mx-6 mt-6 p-3 bg-[#ffdad6]/60 border border-[#ba1a1a]/30 text-[#93000a] rounded flex items-center gap-2 text-xs">
-                            <AlertTriangle className="w-4 h-4 text-[#ba1a1a] flex-shrink-0" />
-                            <span>{formError}</span>
-                        </div>
-                    )}
-
-                    {/* Form Container */}
-                    <form onSubmit={handleSubmit(onSubmit)} className="p-6 flex flex-col gap-6">
-                        {/* Dossier Title Header */}
-                        <div className="border-b border-[rgba(26,26,26,0.08)] pb-4">
-                            <h3 className="font-serif text-lg font-bold text-[#1A1A1A]">Achievement Dossier</h3>
-                            <p className="text-xs text-[#6B665F] mt-0.5">
-                                Record verified varsity honors, medals, and individual accolades for institutional
-                                history.
-                            </p>
-                        </div>
-
-                        {/* SECTION 01: Distinction Details */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
-                                    01 / Distinction Details
-                                </span>
-                                <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
-                            </div>
-
-                            {/* Achievement Title */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
-                                    <span>
-                                        ACHIEVEMENT TITLE <span className="text-[#ba1a1a]">*</span>
+                            {/* SECTION 01: Distinction Details */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
+                                        01 / Distinction Details
                                     </span>
-                                    {errors.title && (
-                                        <span className="text-[#ba1a1a] text-[11px] font-sans">
-                                            {errors.title.message}
-                                        </span>
-                                    )}
-                                </label>
-                                <input
-                                    type="text"
-                                    {...register("title")}
-                                    placeholder="e.g. 54th Inter-IIT Sports Meet — Champions"
-                                    className={`w-full text-xs px-3 py-2 bg-[#fcf9f2] border rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b] ${
-                                        errors.title ? "border-[#ba1a1a]" : "border-[rgba(26,26,26,0.12)]"
-                                    }`}
-                                />
-                            </div>
-
-                            {/* Type & Year (2 Columns) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
-                                        <span>
-                                            ACHIEVEMENT TYPE <span className="text-[#ba1a1a]">*</span>
-                                        </span>
-                                        {errors.type && (
-                                            <span className="text-[#ba1a1a] text-[11px] font-sans">
-                                                {errors.type.message}
-                                            </span>
-                                        )}
-                                    </label>
-                                    <select
-                                        {...register("type")}
-                                        className="w-full text-xs px-3 py-2 bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="Championship">Championship Trophy</option>
-                                        <option value="Medal">Medal (Gold / Silver / Bronze)</option>
-                                        <option value="Award">Award / Commendation</option>
-                                        <option value="Major Victory">Major Victory / Milestone Win</option>
-                                        <option value="Individual Achievement">Individual Honor / Distinction</option>
-                                    </select>
+                                    <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
                                 </div>
 
+                                {/* Achievement Title */}
                                 <div className="flex flex-col gap-1.5">
                                     <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
                                         <span>
-                                            YEAR <span className="text-[#ba1a1a]">*</span>
+                                            ACHIEVEMENT TITLE <span className="text-[#ba1a1a]">*</span>
                                         </span>
-                                        {errors.year && (
+                                        {errors.title && (
                                             <span className="text-[#ba1a1a] text-[11px] font-sans">
-                                                {errors.year.message}
+                                                {errors.title.message}
                                             </span>
                                         )}
                                     </label>
                                     <input
-                                        type="number"
-                                        {...register("year")}
-                                        placeholder="YYYY (e.g. 2019)"
+                                        type="text"
+                                        {...register("title")}
+                                        placeholder="e.g. 54th Inter-IIT Sports Meet — Champions"
                                         className={`w-full text-xs px-3 py-2 bg-[#fcf9f2] border rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b] ${
-                                            errors.year ? "border-[#ba1a1a]" : "border-[rgba(26,26,26,0.12)]"
+                                            errors.title ? "border-[#ba1a1a]" : "border-[rgba(26,26,26,0.12)]"
                                         }`}
+                                    />
+                                </div>
+
+                                {/* Type & Year (2 Columns) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
+                                            <span>
+                                                ACHIEVEMENT TYPE <span className="text-[#ba1a1a]">*</span>
+                                            </span>
+                                            {errors.type && (
+                                                <span className="text-[#ba1a1a] text-[11px] font-sans">
+                                                    {errors.type.message}
+                                                </span>
+                                            )}
+                                        </label>
+                                        <AdminSelect
+                                            value={watchedType}
+                                            onChange={(val) => setValue("type", val as any, { shouldValidate: true })}
+                                            options={ACHIEVEMENT_TYPE_FORM_OPTIONS}
+                                            error={Boolean(errors.type)}
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
+                                            <span>
+                                                YEAR <span className="text-[#ba1a1a]">*</span>
+                                            </span>
+                                            {errors.year && (
+                                                <span className="text-[#ba1a1a] text-[11px] font-sans">
+                                                    {errors.year.message}
+                                                </span>
+                                            )}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            {...register("year")}
+                                            placeholder="YYYY (e.g. 2019)"
+                                            className={`w-full text-xs px-3 py-2 bg-[#fcf9f2] border rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b] ${
+                                                errors.year ? "border-[#ba1a1a]" : "border-[rgba(26,26,26,0.12)]"
+                                            }`}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Tournament / Circuit Reference */}
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="font-mono text-xs text-[#1A1A1A] font-medium">
+                                        TOURNAMENT / CIRCUIT (OPTIONAL)
+                                    </label>
+                                    <AdminSelect
+                                        value={watchedTournament || ""}
+                                        onChange={(val) => setValue("tournament", val, { shouldValidate: true })}
+                                        options={tournamentSelectOptions}
+                                        placeholder="None / Non-Tournament Distinction"
+                                        searchable={true}
                                     />
                                 </div>
                             </div>
 
-                            {/* Tournament / Circuit Reference */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="font-mono text-xs text-[#1A1A1A] font-medium">
-                                    TOURNAMENT / CIRCUIT (OPTIONAL)
-                                </label>
-                                <select
-                                    {...register("tournament")}
-                                    className="w-full text-xs px-3 py-2 bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                >
-                                    <option value="">None / Non-Tournament Distinction</option>
-                                    {tournaments.map((t) => (
-                                        <option key={t._id} value={t._id}>
-                                            {t.name} ({t.type || "Varsity Circuit"})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* SECTION 02: Recipient Specification */}
-                        <div className="space-y-4 pt-2">
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
-                                    02 / Recipient Specification
-                                </span>
-                                <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
-                            </div>
-
-                            {/* Recipient Category (Radio Pills) */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="font-mono text-xs text-[#1A1A1A] font-medium">
-                                    RECIPIENT CATEGORY <span className="text-[#ba1a1a]">*</span>
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRecipientTypeChange("Team")}
-                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-xs font-medium transition-colors ${
-                                            watchedRecipientType === "Team"
-                                                ? "bg-[#E2DDD4] border-[#3d030b] text-[#3d030b]"
-                                                : "bg-[#fcf9f2] border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:bg-[#E2DDD4]"
-                                        }`}
-                                    >
-                                        <Users className="w-3.5 h-3.5" />
-                                        <span>Team Award</span>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRecipientTypeChange("Player")}
-                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-xs font-medium transition-colors ${
-                                            watchedRecipientType === "Player"
-                                                ? "bg-[#E2DDD4] border-[#3d030b] text-[#3d030b]"
-                                                : "bg-[#fcf9f2] border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:bg-[#E2DDD4]"
-                                        }`}
-                                    >
-                                        <User className="w-3.5 h-3.5" />
-                                        <span>Individual Player</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Selected Recipient Entity Card & Selector */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
-                                    <span>
-                                        SELECTED RECIPIENT ENTITY <span className="text-[#ba1a1a]">*</span>
+                            {/* SECTION 02: Recipient Specification */}
+                            <div className="space-y-4 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
+                                        02 / Recipient Specification
                                     </span>
-                                    {errors.recipient && (
-                                        <span className="text-[#ba1a1a] text-[11px] font-sans">
-                                            {errors.recipient.message}
-                                        </span>
-                                    )}
-                                </label>
+                                    <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
+                                </div>
 
-                                {selectedRecipientDisplay && !isChangingRecipient ? (
-                                    <div className="p-3 bg-[#f1eee7] rounded border border-[rgba(26,26,26,0.1)] flex items-center justify-between">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <div className="w-8 h-8 rounded bg-[#fcf9f2] flex items-center justify-center text-[#3d030b] border border-[rgba(26,26,26,0.1)] flex-shrink-0">
-                                                <selectedRecipientDisplay.icon className="w-4 h-4" />
-                                            </div>
-                                            <div className="overflow-hidden">
-                                                <span className="text-xs font-semibold text-[#1A1A1A] block truncate">
-                                                    {selectedRecipientDisplay.title}
-                                                </span>
-                                                <span className="text-[10px] text-[#6B665F] block truncate">
-                                                    {selectedRecipientDisplay.subtitle}
-                                                </span>
-                                            </div>
-                                        </div>
+                                {/* Recipient Category (Radio Pills) */}
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="font-mono text-xs text-[#1A1A1A] font-medium">
+                                        RECIPIENT CATEGORY <span className="text-[#ba1a1a]">*</span>
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => setIsChangingRecipient(true)}
-                                            className="text-xs text-[#3d030b] hover:underline font-mono px-2 py-1 flex-shrink-0"
+                                            onClick={() => handleRecipientTypeChange("Team")}
+                                            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-xs font-medium transition-colors ${
+                                                watchedRecipientType === "Team"
+                                                    ? "bg-[#E2DDD4] border-[#3d030b] text-[#3d030b]"
+                                                    : "bg-[#fcf9f2] border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:bg-[#E2DDD4]"
+                                            }`}
                                         >
-                                            Change
+                                            <Users className="w-3.5 h-3.5" />
+                                            <span>Team Award</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRecipientTypeChange("Player")}
+                                            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-xs font-medium transition-colors ${
+                                                watchedRecipientType === "Player"
+                                                    ? "bg-[#E2DDD4] border-[#3d030b] text-[#3d030b]"
+                                                    : "bg-[#fcf9f2] border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:bg-[#E2DDD4]"
+                                            }`}
+                                        >
+                                            <User className="w-3.5 h-3.5" />
+                                            <span>Individual Player</span>
                                         </button>
                                     </div>
-                                ) : (
-                                    <div className="space-y-2 p-3 bg-[#f1eee7] rounded border border-[rgba(26,26,26,0.1)]">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                value={recipientSearch}
-                                                onChange={(e) => setRecipientSearch(e.target.value)}
-                                                placeholder={`Filter ${
-                                                    watchedRecipientType === "Player"
-                                                        ? "players by name..."
-                                                        : "teams by season..."
-                                                }`}
-                                                className="w-full text-xs px-2.5 py-1.5 bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] focus:outline-none"
+                                </div>
+
+                                {/* Selected Recipient Entity Card & Selector */}
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="font-mono text-xs text-[#1A1A1A] font-medium flex items-center justify-between">
+                                        <span>
+                                            SELECTED RECIPIENT ENTITY <span className="text-[#ba1a1a]">*</span>
+                                        </span>
+                                        {errors.recipient && (
+                                            <span className="text-[#ba1a1a] text-[11px] font-sans">
+                                                {errors.recipient.message}
+                                            </span>
+                                        )}
+                                    </label>
+
+                                    {selectedRecipientDisplay && !isChangingRecipient ? (
+                                        <div className="p-3 bg-[#f1eee7] rounded border border-[rgba(26,26,26,0.1)] flex items-center justify-between">
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <div className="w-8 h-8 rounded bg-[#fcf9f2] flex items-center justify-center text-[#3d030b] border border-[rgba(26,26,26,0.1)] flex-shrink-0">
+                                                    <selectedRecipientDisplay.icon className="w-4 h-4" />
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <span className="text-xs font-semibold text-[#1A1A1A] block truncate">
+                                                        {selectedRecipientDisplay.title}
+                                                    </span>
+                                                    <span className="text-[10px] text-[#6B665F] block truncate">
+                                                        {selectedRecipientDisplay.subtitle}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsChangingRecipient(true)}
+                                                className="text-xs text-[#3d030b] hover:underline font-mono px-2 py-1 flex-shrink-0 cursor-pointer"
+                                            >
+                                                Change
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <AdminSelect
+                                                value={watchedRecipient || ""}
+                                                onChange={(val) => {
+                                                    setValue("recipient", val, { shouldValidate: true });
+                                                    setIsChangingRecipient(false);
+                                                }}
+                                                options={recipientEntityOptions}
+                                                placeholder={`Select ${watchedRecipientType === "Player" ? "player" : "team"}...`}
+                                                searchable={true}
+                                                error={Boolean(errors.recipient)}
                                             />
                                             {selectedRecipientDisplay && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsChangingRecipient(false)}
-                                                    className="text-xs text-[#6B665F] hover:text-[#1A1A1A] px-2 py-1"
-                                                >
-                                                    Done
-                                                </button>
+                                                <div className="flex justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsChangingRecipient(false)}
+                                                        className="text-xs text-[#6B665F] hover:text-[#1A1A1A] px-2 py-1 font-mono cursor-pointer"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
-
-                                        <select
-                                            {...register("recipient", {
-                                                onChange: () => setIsChangingRecipient(false),
-                                            })}
-                                            size={4}
-                                            className="w-full text-xs p-1.5 bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] focus:outline-none"
-                                        >
-                                            {watchedRecipientType === "Player"
-                                                ? filteredPlayers.map((player) => (
-                                                      <option key={player._id} value={player._id} className="py-1 px-2">
-                                                          {player.name} • {player.playingPosition || "Squad Member"}
-                                                          {player.jerseyNumber ? ` • #${player.jerseyNumber}` : ""}
-                                                      </option>
-                                                  ))
-                                                : filteredTeams.map((team) => {
-                                                      const capt = team.captain
-                                                          ? playersMap.get(team.captain)?.name
-                                                          : null;
-                                                      return (
-                                                          <option key={team._id} value={team._id} className="py-1 px-2">
-                                                              Men's Varsity Team ({team.year})
-                                                              {capt ? ` • Capt. ${capt}` : ""}
-                                                              {team.players ? ` (${team.players.length} players)` : ""}
-                                                          </option>
-                                                      );
-                                                  })}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* SECTION 03: Archival Narrative & Description */}
-                        <div className="space-y-3 pt-2">
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
-                                    03 / Archival Narrative &amp; Description
-                                </span>
-                                <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <label className="font-mono text-xs text-[#1A1A1A] font-medium">
-                                    NARRATIVE CITATION NOTES (OPTIONAL)
-                                </label>
-                                <textarea
-                                    {...register("description")}
-                                    rows={3}
-                                    placeholder="Enter verified citation notes, final match scoreline, standout performances, or historical remarks..."
-                                    className="w-full text-xs p-3 bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b] resize-none"
-                                />
-                            </div>
-                        </div>
-
-                        {/* SECTION 04: Associated Media Reference */}
-                        <div className="space-y-3 pt-2">
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
-                                    04 / Associated Media Reference
-                                </span>
-                                <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
-                            </div>
-
-                            <div className="bg-[#ECE8E1] p-4 border border-[rgba(26,26,26,0.08)] rounded flex items-center justify-between">
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                    <div className="w-14 h-14 bg-[#E2DDD4] border border-[rgba(26,26,26,0.12)] overflow-hidden flex-shrink-0 flex items-center justify-center rounded">
-                                        {selectedGalleryItem?.imageUrl ? (
-                                            <img
-                                                src={selectedGalleryItem.imageUrl}
-                                                alt={selectedGalleryItem.caption || "Achievement plate"}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <ImageIcon className="w-6 h-6 text-[#9C968D]" />
-                                        )}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <span className="font-mono text-xs font-semibold text-[#1A1A1A] block truncate">
-                                            {selectedGalleryItem?.caption || "No gallery plate attached"}
-                                        </span>
-                                        <span className="font-mono text-[10px] text-[#6B665F] block truncate">
-                                            {selectedGalleryItem
-                                                ? `${selectedGalleryItem.category} • Year: ${selectedGalleryItem.year || "N/A"}`
-                                                : "Browse real gallery plates to enrich visual context"}
-                                        </span>
-                                    </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    {selectedGalleryItem && (
+                            </div>
+
+                            {/* SECTION 03: Archival Narrative & Description */}
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
+                                        03 / Archival Narrative &amp; Description
+                                    </span>
+                                    <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="font-mono text-xs text-[#1A1A1A] font-medium">
+                                        NARRATIVE CITATION NOTES (OPTIONAL)
+                                    </label>
+                                    <textarea
+                                        {...register("description")}
+                                        rows={3}
+                                        placeholder="Enter verified citation notes, final match scoreline, standout performances, or historical remarks..."
+                                        className="w-full text-xs p-3 bg-[#fcf9f2] border border-[rgba(26,26,26,0.12)] rounded text-[#1A1A1A] placeholder:text-[#9C968D] focus:outline-none focus:border-[#3d030b] resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* SECTION 04: Associated Media Reference */}
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs uppercase tracking-wider text-[#3d030b] font-semibold">
+                                        04 / Associated Media Reference
+                                    </span>
+                                    <div className="flex-1 h-[1px] bg-[rgba(26,26,26,0.08)]"></div>
+                                </div>
+
+                                <div className="bg-[#ECE8E1] p-4 border border-[rgba(26,26,26,0.08)] rounded flex items-center justify-between">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="w-14 h-14 bg-[#E2DDD4] border border-[rgba(26,26,26,0.12)] overflow-hidden flex-shrink-0 flex items-center justify-center rounded">
+                                            {selectedGalleryItem?.imageUrl ? (
+                                                <img
+                                                    src={selectedGalleryItem.imageUrl}
+                                                    alt={selectedGalleryItem.caption || "Achievement plate"}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <ImageIcon className="w-6 h-6 text-[#9C968D]" />
+                                            )}
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <span className="font-mono text-xs font-semibold text-[#1A1A1A] block truncate">
+                                                {selectedGalleryItem?.caption || "No gallery plate attached"}
+                                            </span>
+                                            <span className="font-mono text-[10px] text-[#6B665F] block truncate">
+                                                {selectedGalleryItem
+                                                    ? `${selectedGalleryItem.category} • Year: ${selectedGalleryItem.year || "N/A"}`
+                                                    : "Browse real gallery plates to enrich visual context"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        {selectedGalleryItem && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedGalleryItem(null)}
+                                                className="p-1 text-[#ba1a1a] hover:bg-[#ffdad6] rounded"
+                                                title="Clear media link"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedGalleryItem(null)}
-                                            className="p-1 text-[#ba1a1a] hover:bg-[#ffdad6] rounded"
-                                            title="Clear media link"
+                                            onClick={() => setOpenGalleryModal(true)}
+                                            className="px-3 py-1.5 rounded-full border border-[rgba(26,26,26,0.12)] text-xs bg-[#fcf9f2] hover:bg-[#E2DDD4] text-[#1A1A1A] font-medium flex items-center gap-1.5 transition-colors"
                                         >
-                                            <X className="w-4 h-4" />
+                                            <ImageIcon className="w-3.5 h-3.5 text-[#3d030b]" />
+                                            <span>Select from Gallery</span>
                                         </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenGalleryModal(true)}
-                                        className="px-3 py-1.5 rounded-full border border-[rgba(26,26,26,0.12)] text-xs bg-[#fcf9f2] hover:bg-[#E2DDD4] text-[#1A1A1A] font-medium flex items-center gap-1.5 transition-colors"
-                                    >
-                                        <ImageIcon className="w-3.5 h-3.5 text-[#3d030b]" />
-                                        <span>Select from Gallery</span>
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* SECTION 05: Form Action Buttons */}
-                        <div className="pt-4 border-t border-[rgba(26,26,26,0.08)] flex items-center justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={handleStartCreate}
-                                className="px-5 py-2 rounded-full border border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] text-xs font-medium transition-colors"
-                            >
-                                Reset Form
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={submitting}
-                                className="px-6 py-2 rounded-full bg-[#5a181e] text-white font-medium text-xs hover:bg-[#3d030b] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
-                            >
-                                {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                <span>{selectedAchievement ? "Commit Record Changes" : "Ingest New Achievement"}</span>
-                            </button>
-                        </div>
-                    </form>
-                </section>
+                            {/* Sticky Form Action Footer */}
+                            <div className="pt-4 border-t border-[rgba(26,26,26,0.08)] flex items-center justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={handleStartCreate}
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
+                                >
+                                    Reset
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-white text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
+                                >
+                                    {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                                    <span>{selectedAchievement ? "Save Changes" : "Commit Record"}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
             </main>
 
             {/* ========================================================= */}
@@ -1278,7 +1262,7 @@ export default function AdminAchievements() {
                                 <AlertTriangle className="w-5 h-5 text-[#ba1a1a]" />
                             </div>
                             <div>
-                                <h3 className="text-base font-serif font-bold text-[#1A1A1A]">
+                                <h3 className="text-base font-serif font-semibold text-[#1A1A1A]">
                                     Confirm Achievement Deletion
                                 </h3>
                                 <p className="text-xs text-[#6B665F]">This action cannot be reversed.</p>
@@ -1329,7 +1313,7 @@ export default function AdminAchievements() {
                         <div className="flex items-center justify-between border-b border-[rgba(26,26,26,0.08)] pb-4">
                             <div className="flex items-center gap-2">
                                 <ImageIcon className="w-5 h-5 text-[#3d030b]" />
-                                <h3 className="font-serif text-base font-bold text-[#1A1A1A]">
+                                <h3 className="font-serif text-base font-semibold text-[#1A1A1A]">
                                     Archival Gallery Catalogue
                                 </h3>
                             </div>

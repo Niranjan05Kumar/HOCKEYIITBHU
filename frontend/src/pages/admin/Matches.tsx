@@ -14,15 +14,28 @@ import {
     ChevronRight,
     Trophy,
     Calendar,
-    Check,
-    ChevronDown,
-    Info,
 } from "lucide-react";
 import { getMatches, createMatch, updateMatch, deleteMatch } from "@/api/matches";
 import { getTournamentEditions, getTournaments } from "@/api/tournaments";
 import type { Match, MatchCreateInput, MatchResult } from "@/types/match";
 import type { Tournament, TournamentEdition } from "@/types/tournament";
 import { matchFormSchema, type MatchFormData, ROUND_STAGE_OPTIONS } from "@/schemas/matchSchema";
+import AdminSelect from "@/components/admin/AdminSelect";
+
+const RESULT_FILTER_OPTIONS = [
+    { value: "all", label: "All Results" },
+    { value: "Win", label: "Win (W)" },
+    { value: "Loss", label: "Loss (L)" },
+    { value: "Draw", label: "Draw (D)" },
+];
+
+const ERA_FILTER_OPTIONS = [
+    { value: "all", label: "All Eras" },
+    { value: "modern", label: "2010s – 2020s (Modern)" },
+    { value: "1990s", label: "1990s – 2000s" },
+    { value: "1970s", label: "1970s – 1980s" },
+    { value: "1960s", label: "1960s (Foundational)" },
+];
 
 export default function AdminMatches() {
     // -------------------------------------------------------------------------
@@ -64,10 +77,6 @@ export default function AdminMatches() {
 
     // Mobile View Toggle
     const [mobileTab, setMobileTab] = useState<"list" | "form">("list");
-
-    // Searchable Edition Dropdown in Form
-    const [openEditionSelect, setOpenEditionSelect] = useState<boolean>(false);
-    const [editionSearch, setEditionSearch] = useState<string>("");
 
     // -------------------------------------------------------------------------
     // React Hook Form Setup
@@ -137,6 +146,34 @@ export default function AdminMatches() {
         }
         return map;
     }, [editions]);
+
+    const editionFilterOptions = useMemo(() => [
+        { value: "all", label: "All Editions" },
+        ...editions.map((ed) => ({
+            value: ed._id,
+            label: `${ed.edition} (${ed.year})`,
+        })),
+    ], [editions]);
+
+    const stageFilterOptions = useMemo(() => [
+        { value: "all", label: "All Stages" },
+        ...ROUND_STAGE_OPTIONS.map((stg) => ({
+            value: stg,
+            label: stg,
+        })),
+    ], []);
+
+    const formEditionOptions = useMemo(() => [
+        { value: "", label: "Select Tournament Edition..." },
+        ...editions.map((ed) => {
+            const tour = tournamentMap.get(ed.tournament);
+            return {
+                value: ed._id,
+                label: `${ed.edition} (${ed.year})`,
+                sublabel: `${tour?.name || "Tournament"}${ed.hostInstitute ? ` • ${ed.hostInstitute}` : ""}`,
+            };
+        }),
+    ], [editions, tournamentMap]);
 
     // -------------------------------------------------------------------------
     // Fetch Catalogs (Editions & Tournaments)
@@ -298,6 +335,16 @@ export default function AdminMatches() {
         });
     };
 
+    const handleReset = () => {
+        setFormSuccess(null);
+        setFormError(null);
+        if (selectedMatch) {
+            selectMatchForEdit(selectedMatch);
+        } else {
+            switchModeToCreate();
+        }
+    };
+
     // -------------------------------------------------------------------------
     // Form Submission: Create or Update
     // -------------------------------------------------------------------------
@@ -446,46 +493,35 @@ export default function AdminMatches() {
 
     return (
         <div className="min-h-screen bg-[#FCF9F2] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#3d030b] selection:text-white">
-            {/* Top Sub-Header & Archival Action Anchor */}
-            <header className="px-6 md:px-10 py-6 bg-[#F4F1EA] border-b border-[rgba(26,26,26,0.08)]">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <span className="inline-block w-2 h-2 bg-[#3d030b]"></span>
-                            <span className="text-[11px] font-semibold tracking-widest text-[#6B665F] uppercase">
-                                Sanctioned Ledger Module
-                            </span>
-                        </div>
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#1A1A1A]">
-                            Matches Directory &amp; Score Register
-                        </h1>
-                        <p className="text-xs md:text-sm text-[#6B665F] mt-1 max-w-3xl">
-                            Log, verify, and curate competitive varsity fixtures, scorelines, tournament stages, and
-                            archival match outcomes across competitive eras.
-                        </p>
-                    </div>
+            {/* Standardized Admin Page Header */}
+            <header className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#FCF9F2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] tracking-tight">
+                        Matches Directory &amp; Score Register
+                    </h1>
+                    <p className="text-xs md:text-sm text-[#6B665F] mt-1">Manage fixtures, scores, and results.</p>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={fetchMatchesList}
-                            disabled={loading}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs text-[#6B665F] hover:text-[#3d030b] border border-[rgba(26,26,26,0.12)] hover:border-[#3d030b] transition-all bg-[#ECE8E1] rounded-full disabled:opacity-50 cursor-pointer"
-                            title="Synchronize records"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                            <span className="tracking-tight uppercase font-medium text-[11px]">Sync</span>
-                        </button>
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={fetchMatchesList}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
+                        title="Synchronize records"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                        <span>SYNC</span>
+                    </button>
 
-                        <button
-                            type="button"
-                            onClick={switchModeToCreate}
-                            className="px-4 py-2 rounded-full bg-[#3d030b] text-[#F4F1EA] text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>+ Add New Match</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={switchModeToCreate}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3d030b] hover:bg-[#5a181e] text-[#F4F1EA] text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Match</span>
+                    </button>
                 </div>
             </header>
 
@@ -516,7 +552,7 @@ export default function AdminMatches() {
             </div>
 
             {/* Main Two-Panel Workspace Grid */}
-            <main className="flex-1 p-6 md:p-10">
+            <main className="flex-1 p-6 md:p-12">
                 <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8 items-start">
                     {/* ========================================================= */}
                     {/* LEFT PANEL: Matches Directory & Ledger (7/12)             */}
@@ -598,36 +634,27 @@ export default function AdminMatches() {
                                     <label className="text-[10px] uppercase font-semibold text-[#6B665F]">
                                         Tournament Edition
                                     </label>
-                                    <select
+                                    <AdminSelect
                                         value={selectedEditionFilter}
-                                        onChange={(e) => {
-                                            setSelectedEditionFilter(e.target.value);
+                                        onChange={(val) => {
+                                            setSelectedEditionFilter(val);
                                             setPage(1);
                                         }}
-                                        className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] rounded px-2 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Editions</option>
-                                        {editions.map((ed) => (
-                                            <option key={ed._id} value={ed._id}>
-                                                {ed.edition} ({ed.year})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        options={editionFilterOptions}
+                                        placeholder="All Editions"
+                                        searchable={true}
+                                    />
                                 </div>
 
                                 {/* Result Filter */}
                                 <div className="flex flex-col gap-1">
                                     <label className="text-[10px] uppercase font-semibold text-[#6B665F]">Result</label>
-                                    <select
+                                    <AdminSelect
                                         value={resultFilter}
-                                        onChange={(e) => setResultFilter(e.target.value)}
-                                        className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] rounded px-2 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Results</option>
-                                        <option value="Win">Win (W)</option>
-                                        <option value="Loss">Loss (L)</option>
-                                        <option value="Draw">Draw (D)</option>
-                                    </select>
+                                        onChange={(val) => setResultFilter(val as any)}
+                                        options={RESULT_FILTER_OPTIONS}
+                                        placeholder="All Results"
+                                    />
                                 </div>
 
                                 {/* Round / Stage Filter */}
@@ -635,18 +662,13 @@ export default function AdminMatches() {
                                     <label className="text-[10px] uppercase font-semibold text-[#6B665F]">
                                         Stage / Round
                                     </label>
-                                    <select
+                                    <AdminSelect
                                         value={stageFilter}
-                                        onChange={(e) => setStageFilter(e.target.value)}
-                                        className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] rounded px-2 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Stages</option>
-                                        {ROUND_STAGE_OPTIONS.map((stg) => (
-                                            <option key={stg} value={stg}>
-                                                {stg}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => setStageFilter(val)}
+                                        options={stageFilterOptions}
+                                        placeholder="All Stages"
+                                        searchable={true}
+                                    />
                                 </div>
 
                                 {/* Decade / Era Filter */}
@@ -654,17 +676,12 @@ export default function AdminMatches() {
                                     <label className="text-[10px] uppercase font-semibold text-[#6B665F]">
                                         Decade / Era
                                     </label>
-                                    <select
+                                    <AdminSelect
                                         value={eraFilter}
-                                        onChange={(e) => setEraFilter(e.target.value)}
-                                        className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] rounded px-2 py-1 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Eras</option>
-                                        <option value="modern">2010s – 2020s (Modern)</option>
-                                        <option value="1990s">1990s – 2000s</option>
-                                        <option value="1970s">1970s – 1980s</option>
-                                        <option value="1960s">1960s (Foundational)</option>
-                                    </select>
+                                        onChange={(val) => setEraFilter(val)}
+                                        options={ERA_FILTER_OPTIONS}
+                                        placeholder="All Eras"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -827,21 +844,6 @@ export default function AdminMatches() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Archival Verification Note Banner matching Stitch */}
-                        <div className="p-4 bg-[#F4F1EA] border border-[rgba(26,26,26,0.08)] flex items-start gap-3">
-                            <Info className="w-5 h-5 text-[#765a1a] shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="text-xs uppercase tracking-wider text-[#1A1A1A] font-semibold">
-                                    Institutional Integrity Rule
-                                </h4>
-                                <p className="text-xs text-[#6B665F] mt-0.5 leading-relaxed">
-                                    Every logged scoreline must be validated against physical sports council registers
-                                    or authorized tournament reports prior to committal into the permanent ledger.
-                                    Discrepancies are flagged for Senior Historiographer review.
-                                </p>
-                            </div>
-                        </div>
                     </div>
 
                     {/* ========================================================= */}
@@ -852,43 +854,17 @@ export default function AdminMatches() {
                             mobileTab === "list" ? "hidden xl:block" : "block"
                         }`}
                     >
-                        {/* Form Top Action Strip */}
-                        <div className="p-4 bg-[#EBE8E1] border-b border-[rgba(26,26,26,0.08)] flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span
-                                    className={`w-2.5 h-2.5 rounded-full inline-block ${
-                                        selectedMatch ? "bg-[#3d030b]" : "bg-emerald-600"
-                                    }`}
-                                ></span>
-                                <span className="text-xs uppercase tracking-wider font-bold text-[#1A1A1A]">
-                                    {selectedMatch
-                                        ? `Editing Fixture — vs ${selectedMatch.opponent}`
-                                        : "New Match Dossier — Create Mode"}
+                        {selectedMatch && (
+                            <div className="p-4 bg-[#EBE8E1] border-b border-[rgba(26,26,26,0.08)] flex items-center">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
+                                    EDITING MATCH — VS {selectedMatch.opponent.toUpperCase()}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={switchModeToCreate}
-                                    className="px-3 py-1 rounded-full border border-[rgba(26,26,26,0.2)] bg-[#FCF9F2] text-[#6B665F] text-xs hover:bg-[#E2DDD4] transition-colors cursor-pointer"
-                                >
-                                    {selectedMatch ? "New Mode" : "Reset"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSubmit(onSubmit)}
-                                    disabled={submitting}
-                                    className="px-3.5 py-1 rounded-full bg-[#3d030b] text-[#F4F1EA] text-xs font-semibold hover:bg-[#5a181e] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                >
-                                    {submitting && <RefreshCw className="w-3 h-3 animate-spin" />}
-                                    <span>{selectedMatch ? "Save Changes" : "Commit Record"}</span>
-                                </button>
-                            </div>
-                        </div>
+                        )}
 
                         {/* Section Header */}
                         <div className="p-4 bg-[#FCF9F2] border-b border-[rgba(26,26,26,0.06)]">
-                            <h2 className="text-sm font-bold text-[#1A1A1A]">Match Dossier</h2>
+                            <h2 className="text-lg font-serif text-[#1A1A1A] tracking-tight">Match Dossier</h2>
                             <p className="text-xs text-[#6B665F] mt-0.5">
                                 Record fixture scoreline, opponent institution, sanctioned tournament edition, and
                                 official match outcome.
@@ -920,85 +896,18 @@ export default function AdminMatches() {
                                 </span>
 
                                 {/* Tournament Edition Searchable Selector */}
-                                <div className="relative">
+                                <div>
                                     <label className="block text-[11px] uppercase tracking-wider text-[#6B665F] mb-1 font-semibold">
                                         Tournament Edition *
                                     </label>
-                                    <div
-                                        onClick={() => setOpenEditionSelect(!openEditionSelect)}
-                                        className="w-full bg-white border border-[rgba(26,26,26,0.15)] rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer hover:border-[#3d030b]"
-                                    >
-                                        <span className="truncate">
-                                            {watchedEdition && editionMap.get(watchedEdition)
-                                                ? `${editionMap.get(watchedEdition)?.edition} (${editionMap.get(watchedEdition)?.year}${editionMap.get(watchedEdition)?.hostInstitute ? `, ${editionMap.get(watchedEdition)?.hostInstitute}` : ""})`
-                                                : "Select Tournament Edition..."}
-                                        </span>
-                                        <ChevronDown className="w-4 h-4 text-[#6B665F] shrink-0" />
-                                    </div>
-
-                                    {openEditionSelect && (
-                                        <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#FCF9F2] border border-[rgba(26,26,26,0.15)] rounded shadow-lg p-2 space-y-2 max-h-56 overflow-y-auto">
-                                            <div className="relative">
-                                                <Search className="w-3.5 h-3.5 text-[#9C968D] absolute left-2 top-2 pointer-events-none" />
-                                                <input
-                                                    type="text"
-                                                    value={editionSearch}
-                                                    onChange={(e) => setEditionSearch(e.target.value)}
-                                                    placeholder="Search editions by name or year..."
-                                                    className="w-full pl-7 pr-2 py-1 text-xs bg-white border border-[rgba(26,26,26,0.12)] rounded focus:outline-none"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                {editions
-                                                    .filter(
-                                                        (ed) =>
-                                                            ed.edition
-                                                                .toLowerCase()
-                                                                .includes(editionSearch.toLowerCase()) ||
-                                                            String(ed.year).includes(editionSearch) ||
-                                                            (ed.hostInstitute &&
-                                                                ed.hostInstitute
-                                                                    .toLowerCase()
-                                                                    .includes(editionSearch.toLowerCase())),
-                                                    )
-                                                    .map((ed) => {
-                                                        const tour = tournamentMap.get(ed.tournament);
-                                                        return (
-                                                            <div
-                                                                key={ed._id}
-                                                                onClick={() => {
-                                                                    setValue("tournamentEdition", ed._id, {
-                                                                        shouldValidate: true,
-                                                                    });
-                                                                    setOpenEditionSelect(false);
-                                                                }}
-                                                                className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer hover:bg-[#ECE8E1] ${
-                                                                    watchedEdition === ed._id
-                                                                        ? "bg-[#ECE8E1] font-semibold text-[#3d030b]"
-                                                                        : "text-[#1A1A1A]"
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div>
-                                                                        {ed.edition} ({ed.year})
-                                                                    </div>
-                                                                    <div className="text-[10px] text-[#6B665F]">
-                                                                        {tour?.name || "Tournament"}
-                                                                        {ed.hostInstitute
-                                                                            ? ` • ${ed.hostInstitute}`
-                                                                            : ""}
-                                                                    </div>
-                                                                </div>
-                                                                {watchedEdition === ed._id && (
-                                                                    <Check className="w-3.5 h-3.5 text-[#3d030b]" />
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <AdminSelect
+                                        value={watchedEdition || ""}
+                                        onChange={(val) => setValue("tournamentEdition", val, { shouldValidate: true })}
+                                        options={formEditionOptions}
+                                        placeholder="Select Tournament Edition..."
+                                        searchable={true}
+                                        error={Boolean(errors.tournamentEdition)}
+                                    />
                                     {errors.tournamentEdition && (
                                         <p className="text-[11px] text-red-600 mt-1">
                                             {errors.tournamentEdition.message}
@@ -1147,22 +1056,29 @@ export default function AdminMatches() {
                                 </div>
                             </div>
 
-                            {/* Form Footer Buttons */}
-                            <div className="pt-2 flex items-center justify-between">
+                            {/* Sticky Form Action Footer */}
+                            <div className="pt-4 border-t border-[rgba(26,26,26,0.08)] flex items-center justify-end space-x-3">
                                 <button
                                     type="button"
                                     onClick={switchModeToCreate}
-                                    className="px-4 py-2 rounded-full border border-[rgba(26,26,26,0.2)] text-[#6B665F] text-xs font-medium hover:bg-[#E2DDD4] transition-colors cursor-pointer"
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
                                 >
-                                    Reset Form
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
+                                >
+                                    Reset
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-[#F4F1EA] text-xs font-semibold hover:bg-[#5a181e] transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-white text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                                 >
                                     {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>{selectedMatch ? "Commit Updates" : "Commit Record"}</span>
+                                    <span>{selectedMatch ? "Save Changes" : "Commit Record"}</span>
                                 </button>
                             </div>
                         </form>

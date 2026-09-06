@@ -17,6 +17,7 @@ import { getPlayers } from "@/api/players";
 import type { GalleryItem, GalleryQuery } from "@/types/gallery";
 import type { TournamentEdition } from "@/types/tournament";
 import type { Player } from "@/types/player";
+import CustomSelect from "@/components/common/CustomSelect";
 
 const CATEGORIES = [
     { label: "All Photos", value: "ALL" },
@@ -119,6 +120,22 @@ export default function Gallery() {
         }
         return map;
     }, [players]);
+
+    const tournamentOptions = useMemo(() => [
+        { value: "ALL", label: "All Tournaments" },
+        ...tournaments.map((t) => ({
+            value: t._id,
+            label: t.edition,
+        })),
+    ], [tournaments]);
+
+    const playerOptions = useMemo(() => [
+        { value: "ALL", label: "All Players" },
+        ...players.map((p) => ({
+            value: p._id,
+            label: p.name,
+        })),
+    ], [players]);
 
     // Filter items client-side for multi-attribute matching (decade, tournament, player, search query)
     const filteredItems = useMemo(() => {
@@ -247,17 +264,12 @@ export default function Gallery() {
                             <span className="text-xs uppercase tracking-widest text-[#9C968D] font-medium">
                                 Decade:
                             </span>
-                            <select
+                            <CustomSelect
                                 value={selectedDecade}
-                                onChange={(e) => setSelectedDecade(e.target.value)}
-                                className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] rounded-none px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#5a181e]"
-                            >
-                                {DECADES.map((d) => (
-                                    <option key={d.value} value={d.value}>
-                                        {d.label}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(val) => setSelectedDecade(val)}
+                                options={DECADES}
+                                className="w-[170px]"
+                            />
                         </div>
 
                         {/* Tournament Filter */}
@@ -266,18 +278,13 @@ export default function Gallery() {
                                 <span className="text-xs uppercase tracking-widest text-[#9C968D] font-medium">
                                     Tournament:
                                 </span>
-                                <select
+                                <CustomSelect
                                     value={selectedTournament}
-                                    onChange={(e) => setSelectedTournament(e.target.value)}
-                                    className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] rounded-none px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#5a181e] max-w-[180px] truncate"
-                                >
-                                    <option value="ALL">All Tournaments</option>
-                                    {tournaments.map((t) => (
-                                        <option key={t._id} value={t._id}>
-                                            {t.edition}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setSelectedTournament(val)}
+                                    options={tournamentOptions}
+                                    searchable={tournaments.length > 5}
+                                    className="w-[180px]"
+                                />
                             </div>
                         )}
 
@@ -287,18 +294,13 @@ export default function Gallery() {
                                 <span className="text-xs uppercase tracking-widest text-[#9C968D] font-medium">
                                     Player:
                                 </span>
-                                <select
+                                <CustomSelect
                                     value={selectedPlayer}
-                                    onChange={(e) => setSelectedPlayer(e.target.value)}
-                                    className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] rounded-none px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#5a181e] max-w-[160px] truncate"
-                                >
-                                    <option value="ALL">All Players</option>
-                                    {players.map((p) => (
-                                        <option key={p._id} value={p._id}>
-                                            {p.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setSelectedPlayer(val)}
+                                    options={playerOptions}
+                                    searchable={players.length > 5}
+                                    className="w-[170px]"
+                                />
                             </div>
                         )}
                     </div>

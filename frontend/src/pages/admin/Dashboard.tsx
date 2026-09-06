@@ -172,30 +172,27 @@ export default function AdminDashboard() {
 
     return (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F4F1EA]">
-            {/* Page Header matching Stitch Variant C */}
-            <header className="border-b border-[rgba(26,26,26,0.08)] px-6 md:px-12 py-8 bg-[#F4F1EA]">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <div>
-                        <span className="text-[11px] md:text-[12px] uppercase tracking-widest font-semibold text-[#9C968D]">
-                            Institutional Records Registry
-                        </span>
-                        <h1 className="text-3xl md:text-[34px] font-medium text-[#3d030b] tracking-tight mt-1">
-                            System Overview
-                        </h1>
-                        <p className="text-xs sm:text-sm text-[#6B665F] mt-1 max-w-3xl leading-relaxed">
-                            Comprehensive count of verified historical assets and documented competitive records.
-                        </p>
-                    </div>
+            {/* Standardized Admin Page Header */}
+            <header className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#FCF9F2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] tracking-tight">
+                        Archival Control &amp; Overview
+                    </h1>
+                    <p className="text-xs md:text-sm text-[#6B665F] mt-1">
+                        Comprehensive metrics and archival records ledger summary.
+                    </p>
+                </div>
 
+                <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
                         onClick={fetchCounts}
                         disabled={loading}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs text-[#6B665F] hover:text-[#3d030b] border border-[rgba(26,26,26,0.12)] hover:border-[#3d030b] transition-all self-start sm:self-auto disabled:opacity-50"
-                        title="Refresh Archive Records"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
+                        title="Synchronize records"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                        <span className="tracking-tight uppercase font-medium text-[11px]">Sync Records</span>
+                        <span>SYNC</span>
                     </button>
                 </div>
             </header>

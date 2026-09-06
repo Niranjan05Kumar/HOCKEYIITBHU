@@ -18,6 +18,7 @@ import { getMatches } from "@/api/matches";
 import { getTournamentEditions } from "@/api/tournaments";
 import type { Match, MatchResult } from "@/types/match";
 import type { TournamentEdition } from "@/types/tournament";
+import CustomSelect from "@/components/common/CustomSelect";
 
 const RESULT_FILTERS: { label: string; value: "ALL" | MatchResult }[] = [
     { label: "All Results", value: "ALL" },
@@ -95,6 +96,22 @@ export default function Matches() {
         }
         return Array.from(set).sort();
     }, [matches]);
+
+    const editionOptions = useMemo(() => [
+        { value: "", label: "All Tournament Editions" },
+        ...editions.map((ed) => ({
+            value: ed._id,
+            label: `${ed.edition} (${ed.year})`,
+        })),
+    ], [editions]);
+
+    const stageOptions = useMemo(() => [
+        { value: "ALL", label: "All Stages" },
+        ...availableStages.map((stage) => ({
+            value: stage,
+            label: stage,
+        })),
+    ], [availableStages]);
 
     // Filtered matches
     const filteredMatches = useMemo(() => {
@@ -369,19 +386,14 @@ export default function Matches() {
                         >
                             Tournament Edition
                         </label>
-                        <select
+                        <CustomSelect
                             id="matches-edition-select"
                             value={selectedEditionId}
-                            onChange={(e) => handleEditionChange(e.target.value)}
-                            className="w-full bg-[#F4F1EA] border border-[rgba(26,26,26,0.15)] rounded px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#5A181E]"
-                        >
-                            <option value="">All Tournament Editions</option>
-                            {editions.map((ed) => (
-                                <option key={ed._id} value={ed._id}>
-                                    {ed.edition} ({ed.year})
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => handleEditionChange(val)}
+                            options={editionOptions}
+                            searchable={editions.length > 5}
+                            placeholder="All Tournament Editions"
+                        />
                     </div>
 
                     {/* Round / Stage Dropdown */}
@@ -392,19 +404,14 @@ export default function Matches() {
                         >
                             Round / Stage
                         </label>
-                        <select
+                        <CustomSelect
                             id="matches-stage-select"
                             value={selectedStage}
-                            onChange={(e) => setSelectedStage(e.target.value)}
-                            className="w-full bg-[#F4F1EA] border border-[rgba(26,26,26,0.15)] rounded px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#5A181E]"
-                        >
-                            <option value="ALL">All Stages</option>
-                            {availableStages.map((stage) => (
-                                <option key={stage} value={stage}>
-                                    {stage}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setSelectedStage(val)}
+                            options={stageOptions}
+                            searchable={availableStages.length > 5}
+                            placeholder="All Stages"
+                        />
                     </div>
 
                     {/* Reset Filters CTA */}

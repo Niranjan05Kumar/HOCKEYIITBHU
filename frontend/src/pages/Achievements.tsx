@@ -5,6 +5,7 @@ import { getAchievements } from "@/api/achievements";
 import { getHistoryEvents } from "@/api/history";
 import type { Achievement, AchievementType, RecipientType } from "@/types/achievement";
 import type { HistoryEvent } from "@/types/history";
+import CustomSelect from "@/components/common/CustomSelect";
 
 const ARCHIVAL_PHOTO_FALLBACK =
     "https://lh3.googleusercontent.com/aida-public/AB6AXuBcM5ZdIUqiaGf60ZQq-2Q0cHW4BfFEzCPOH11KsJe6fX7ewPcMcbzJD-WJpYoIUipjOquBiVKizBUbXrNTp4HiwrlZ25G-JOMa076GVveJAiYf7JjnfPfYkuWUGnRy2Fk3GttsHn5L2y_mceT54jaR-fi68fkUnsMnC_UNqnuvyoY2leVNp_nVTvcoK-8dvEg3ao_VeBCxytIZze-ieUFYgWsRZnQ9TlQrQIFlF2T2-drCtQtsdbXh";
@@ -156,18 +157,12 @@ export default function Achievements() {
                 {/* Secondary Filters: Recipient & Year */}
                 <div className="flex flex-wrap items-center gap-3 self-stretch sm:self-auto">
                     {/* Recipient Dropdown */}
-                    <select
+                    <CustomSelect
                         value={selectedRecipient}
-                        onChange={(e) => setSelectedRecipient(e.target.value as RecipientType | "ALL")}
-                        aria-label="Filter by recipient"
-                        className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] text-[#1A1A1A] text-xs rounded-full px-3 py-1.5 focus:outline-none focus:border-[#5a181e]"
-                    >
-                        {RECIPIENT_TYPES.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={(val) => setSelectedRecipient(val as RecipientType | "ALL")}
+                        options={RECIPIENT_TYPES}
+                        className="w-[160px]"
+                    />
 
                     {/* Year Input */}
                     <input

@@ -22,6 +22,23 @@ import { getAchievements } from "@/api/achievements";
 import type { Player, PlayerCreateInput, PlayingPosition, PlayerStatus } from "@/types/player";
 import type { Achievement } from "@/types/achievement";
 import { playerFormSchema, type PlayerFormData } from "@/schemas/playerSchema";
+import AdminSelect from "@/components/admin/AdminSelect";
+
+const POSITION_FILTER_OPTIONS = [
+    { value: "all", label: "All Positions" },
+    { value: "Forward", label: "Forward" },
+    { value: "Midfielder", label: "Midfielder" },
+    { value: "Defender", label: "Defender" },
+    { value: "Goalkeeper", label: "Goalkeeper" },
+];
+
+const PLAYING_POSITION_OPTIONS = [
+    { value: "", label: "Select Position (Optional)" },
+    { value: "Forward", label: "Forward" },
+    { value: "Midfielder", label: "Midfielder" },
+    { value: "Defender", label: "Defender" },
+    { value: "Goalkeeper", label: "Goalkeeper" },
+];
 
 export default function AdminPlayers() {
     // -------------------------------------------------------------------------
@@ -93,6 +110,7 @@ export default function AdminPlayers() {
     });
 
     const currentStatus = watch("status");
+    const watchedPosition = watch("playingPosition");
     const watchedAchievementIds = watch("achievementIds") || [];
 
     // -------------------------------------------------------------------------
@@ -211,6 +229,16 @@ export default function AdminPlayers() {
             cleanSheetsCount: undefined,
             achievementIds: [],
         });
+    };
+
+    const handleReset = () => {
+        setFormSuccess(null);
+        setFormError(null);
+        if (selectedPlayer) {
+            selectPlayerForEdit(selectedPlayer);
+        } else {
+            switchModeToCreate();
+        }
     };
 
     // -------------------------------------------------------------------------
@@ -375,43 +403,37 @@ export default function AdminPlayers() {
 
     return (
         <div className="flex-1 flex flex-col min-w-0 bg-[#F4F1EA]">
-            {/* Page Header matching Stitch Players Management */}
-            <header className="border-b border-[rgba(26,26,26,0.08)] px-6 md:px-12 py-8 bg-[#F4F1EA]">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <div>
-                        <span className="text-[11px] md:text-[12px] uppercase tracking-widest font-semibold text-[#9C968D]">
-                            Institutional Records Registry
-                        </span>
-                        <h1 className="text-3xl md:text-[34px] font-medium text-[#3d030b] tracking-tight mt-1">
-                            Players Directory &amp; Dossier
-                        </h1>
-                        <p className="text-xs sm:text-sm text-[#6B665F] mt-1 max-w-3xl leading-relaxed">
-                            Manage institutional player records, varsity tenures, leadership honors, and archival
-                            portraits in one unified register.
-                        </p>
-                    </div>
+            {/* Standardized Admin Page Header */}
+            <header className="px-6 md:px-8 py-6 border-b border-[rgba(26,26,26,0.08)] bg-[#FCF9F2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-serif text-[#1A1A1A] tracking-tight">
+                        Players Directory &amp; Dossier
+                    </h1>
+                    <p className="text-xs md:text-sm text-[#6B665F] mt-1">
+                        Manage archived player records and profiles.
+                    </p>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={fetchPlayersList}
-                            disabled={loading}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs text-[#6B665F] hover:text-[#3d030b] border border-[rgba(26,26,26,0.12)] hover:border-[#3d030b] transition-all bg-[#ECE8E1] disabled:opacity-50"
-                            title="Synchronize records"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                            <span className="tracking-tight uppercase font-medium text-[11px]">Sync</span>
-                        </button>
+                <div className="flex items-center gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={fetchPlayersList}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
+                        title="Synchronize records"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                        <span>SYNC</span>
+                    </button>
 
-                        <button
-                            type="button"
-                            onClick={switchModeToCreate}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#3d030b] text-[#F4F1EA] hover:bg-[#5a181e] transition-colors shadow-xs"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Add New Player</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={switchModeToCreate}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3d030b] hover:bg-[#5a181e] text-[#F4F1EA] text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Player</span>
+                    </button>
                 </div>
             </header>
 
@@ -537,20 +559,16 @@ export default function AdminPlayers() {
 
                                 <div className="flex items-center space-x-2">
                                     {/* Position Dropdown */}
-                                    <select
+                                    <AdminSelect
                                         value={positionFilter}
-                                        onChange={(e) => {
-                                            setPositionFilter(e.target.value as "all" | PlayingPosition);
+                                        onChange={(val) => {
+                                            setPositionFilter(val as "all" | PlayingPosition);
                                             setPage(1);
                                         }}
-                                        className="bg-[#F4F1EA] border border-[rgba(26,26,26,0.1)] rounded px-3 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="all">All Positions</option>
-                                        <option value="Forward">Forward</option>
-                                        <option value="Midfielder">Midfielder</option>
-                                        <option value="Defender">Defender</option>
-                                        <option value="Goalkeeper">Goalkeeper</option>
-                                    </select>
+                                        options={POSITION_FILTER_OPTIONS}
+                                        placeholder="All Positions"
+                                        className="w-[140px]"
+                                    />
 
                                     {/* Year Input */}
                                     <input
@@ -795,31 +813,14 @@ export default function AdminPlayers() {
                         >
                             {/* Dossier Form Header */}
                             <div className="border-b border-[rgba(26,26,26,0.08)] pb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
-                                        {selectedPlayer
-                                            ? `EDITING DOSSIER — ID: ${selectedPlayer._id.slice(-6).toUpperCase()}`
-                                            : "NEW RECORD — CREATE DOSSIER"}
-                                    </span>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            type="button"
-                                            onClick={switchModeToCreate}
-                                            className="px-3 py-1 rounded-full text-xs border border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:text-[#1A1A1A] bg-[#F4F1EA] transition-colors"
-                                        >
-                                            Clear / Reset
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={submitting}
-                                            className="px-4 py-1 rounded-full text-xs font-semibold bg-[#3d030b] text-white hover:bg-[#5a181e] transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                        >
-                                            {submitting && <RefreshCw className="w-3 h-3 animate-spin" />}
-                                            <span>Commit Record</span>
-                                        </button>
+                                {selectedPlayer && (
+                                    <div className="flex items-center mb-2">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E2DDD4] text-[#3d030b] border border-[#3d030b]/20 tracking-wider uppercase font-mono">
+                                            EDITING PLAYER — {selectedPlayer.name.toUpperCase()}
+                                        </span>
                                     </div>
-                                </div>
-                                <h2 className="text-lg font-medium text-[#1A1A1A]">Player Dossier</h2>
+                                )}
+                                <h2 className="text-lg font-serif text-[#1A1A1A] tracking-tight">Player Dossier</h2>
                                 <p className="text-xs text-[#6B665F] mt-0.5">
                                     Amend identity, service timeline, archival portrait, and honors.
                                 </p>
@@ -882,19 +883,16 @@ export default function AdminPlayers() {
                                     <label className="block text-xs font-semibold text-[#1A1A1A] mb-1">
                                         Playing Position
                                     </label>
-                                    <select
-                                        {...register("playingPosition")}
-                                        className="w-full bg-[#F4F1EA] border border-[rgba(26,26,26,0.12)] rounded px-3 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="">Select Position (Optional)</option>
-                                        <option value="Forward">Forward</option>
-                                        <option value="Midfielder">Midfielder</option>
-                                        <option value="Defender">Defender</option>
-                                        <option value="Goalkeeper">Goalkeeper</option>
-                                    </select>
+                                    <AdminSelect
+                                        value={watchedPosition || ""}
+                                        onChange={(val) => setValue("playingPosition", val as PlayingPosition, { shouldValidate: true })}
+                                        options={PLAYING_POSITION_OPTIONS}
+                                        placeholder="Select Position (Optional)"
+                                        error={Boolean(errors.playingPosition)}
+                                    />
                                     {errors.playingPosition && (
                                         <p className="text-[11px] text-[#7A2E2E] mt-0.5">
-                                            {errors.playingPosition.message}
+                                             {errors.playingPosition.message}
                                         </p>
                                     )}
                                 </div>
@@ -1149,50 +1147,58 @@ export default function AdminPlayers() {
                                     </p>
                                 )}
 
-                                <div className="flex gap-2 pt-1">
-                                    <select
-                                        value={selectedAchievementId}
-                                        onChange={(e) => setSelectedAchievementId(e.target.value)}
-                                        className="flex-1 bg-[#F4F1EA] border border-[rgba(26,26,26,0.12)] rounded px-2.5 py-1.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#3d030b]"
-                                    >
-                                        <option value="">Select Achievement from Registry...</option>
-                                        {catalogAchievements
-                                            .filter((ach) => !watchedAchievementIds.includes(ach._id))
-                                            .map((ach) => (
-                                                <option key={ach._id} value={ach._id}>
-                                                    {ach.year} — {ach.title} ({ach.type})
-                                                </option>
-                                            ))}
-                                    </select>
+                                <div className="flex gap-2 pt-1 items-center">
+                                    <div className="flex-1">
+                                        <AdminSelect
+                                            value={selectedAchievementId}
+                                            onChange={(val) => setSelectedAchievementId(val)}
+                                            options={[
+                                                { value: "", label: "Select Achievement from Registry..." },
+                                                ...catalogAchievements
+                                                    .filter((ach) => !watchedAchievementIds.includes(ach._id))
+                                                    .map((ach) => ({
+                                                        value: ach._id,
+                                                        label: `${ach.year} — ${ach.title} (${ach.type})`,
+                                                    })),
+                                            ]}
+                                            placeholder="Select Achievement from Registry..."
+                                            searchable={true}
+                                        />
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={handleAddAchievement}
                                         disabled={!selectedAchievementId}
-                                        className="px-3 py-1.5 bg-[#E2DDD4] hover:bg-[#DCDAD3] text-[#1A1A1A] text-xs font-semibold rounded border border-[rgba(26,26,26,0.12)] disabled:opacity-40 transition-colors"
+                                        className="px-3 py-2 bg-[#E2DDD4] hover:bg-[#DCDAD3] text-[#1A1A1A] text-xs font-semibold rounded border border-[rgba(26,26,26,0.12)] disabled:opacity-40 transition-colors shrink-0"
                                     >
                                         Attach
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Bottom Action Buttons */}
-                            <div className="border-t border-[rgba(26,26,26,0.08)] pt-4 flex items-center justify-end space-x-3">
+                            {/* Sticky Form Action Footer */}
+                            <div className="pt-4 border-t border-[rgba(26,26,26,0.08)] flex items-center justify-end space-x-3">
                                 <button
                                     type="button"
                                     onClick={switchModeToCreate}
-                                    className="px-5 py-2 rounded-full text-xs font-medium border border-[rgba(26,26,26,0.15)] text-[#6B665F] hover:text-[#1A1A1A] bg-[#F4F1EA] transition-colors"
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="px-4 py-2 border border-[rgba(26,26,26,0.15)] rounded-full text-xs font-medium text-[#6B665F] hover:text-[#1A1A1A] hover:bg-[#E2DDD4] bg-[#F4F1EA] transition-colors cursor-pointer"
+                                >
+                                    Reset
+                                </button>
+                                <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-6 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#3d030b] text-white hover:bg-[#5a181e] transition-colors shadow-xs disabled:opacity-50 flex items-center gap-2"
+                                    className="px-5 py-2 rounded-full bg-[#3d030b] text-white text-xs font-semibold hover:bg-[#5a181e] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                                 >
                                     {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>
-                                        {selectedPlayer ? "Save Changes / Commit Record" : "Register Player Record"}
-                                    </span>
+                                    <span>{selectedPlayer ? "Save Changes" : "Commit Record"}</span>
                                 </button>
                             </div>
                         </form>
