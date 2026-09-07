@@ -16,9 +16,9 @@ import {
     Calendar,
 } from "lucide-react";
 import { getMatches, createMatch, updateMatch, deleteMatch } from "@/api/matches";
-import { getTournamentEditions, getTournaments } from "@/api/tournaments";
 import type { Match, MatchCreateInput, MatchResult } from "@/types/match";
 import type { Tournament, TournamentEdition } from "@/types/tournament";
+import { getCachedTournamentEditions, getCachedTournaments, invalidateCatalog } from "@/lib/catalogCache";
 import { matchFormSchema, type MatchFormData, ROUND_STAGE_OPTIONS } from "@/schemas/matchSchema";
 import AdminSelect from "@/components/admin/AdminSelect";
 
@@ -147,46 +147,51 @@ export default function AdminMatches() {
         return map;
     }, [editions]);
 
-    const editionFilterOptions = useMemo(() => [
-        { value: "all", label: "All Editions" },
-        ...editions.map((ed) => ({
-            value: ed._id,
-            label: `${ed.edition} (${ed.year})`,
-        })),
-    ], [editions]);
-
-    const stageFilterOptions = useMemo(() => [
-        { value: "all", label: "All Stages" },
-        ...ROUND_STAGE_OPTIONS.map((stg) => ({
-            value: stg,
-            label: stg,
-        })),
-    ], []);
-
-    const formEditionOptions = useMemo(() => [
-        { value: "", label: "Select Tournament Edition..." },
-        ...editions.map((ed) => {
-            const tour = tournamentMap.get(ed.tournament);
-            return {
+    const editionFilterOptions = useMemo(
+        () => [
+            { value: "all", label: "All Editions" },
+            ...editions.map((ed) => ({
                 value: ed._id,
                 label: `${ed.edition} (${ed.year})`,
-                sublabel: `${tour?.name || "Tournament"}${ed.hostInstitute ? ` • ${ed.hostInstitute}` : ""}`,
-            };
-        }),
-    ], [editions, tournamentMap]);
+            })),
+        ],
+        [editions],
+    );
+
+    const stageFilterOptions = useMemo(
+        () => [
+            { value: "all", label: "All Stages" },
+            ...ROUND_STAGE_OPTIONS.map((stg) => ({
+                value: stg,
+                label: stg,
+            })),
+        ],
+        [],
+    );
+
+    const formEditionOptions = useMemo(
+        () => [
+            { value: "", label: "Select Tournament Edition..." },
+            ...editions.map((ed) => {
+                const tour = tournamentMap.get(ed.tournament);
+                return {
+                    value: ed._id,
+                    label: `${ed.edition} (${ed.year})`,
+                    sublabel: `${tour?.name || "Tournament"}${ed.hostInstitute ? ` • ${ed.hostInstitute}` : ""}`,
+                };
+            }),
+        ],
+        [editions, tournamentMap],
+    );
 
     // -------------------------------------------------------------------------
     // Fetch Catalogs (Editions & Tournaments)
-    // -------------------------------------------------------------------------
     const fetchCatalogs = useCallback(async () => {
         try {
-            const [edRes, tourRes] = await Promise.allSettled([
-                getTournamentEditions({ limit: 100, sort: "year", order: "desc" }),
-                getTournaments({ limit: 100, sort: "name", order: "asc" }),
-            ]);
+            const [edRes, tourRes] = await Promise.allSettled([getCachedTournamentEditions(), getCachedTournaments()]);
 
-            if (edRes.status === "fulfilled") setEditions(edRes.value.data);
-            if (tourRes.status === "fulfilled") setTournaments(tourRes.value.data);
+            if (edRes.status === "fulfilled") setEditions(edRes.value);
+            if (tourRes.status === "fulfilled") setTournaments(tourRes.value);
         } catch {
             // Catalogs failed gracefully
         }
@@ -383,12 +388,14 @@ export default function AdminMatches() {
             if (selectedMatch) {
                 // UPDATE RECORD
                 const updated = await updateMatch(selectedMatch._id, payload);
+                invalidateCatalog("matches");
                 setFormSuccess(`Match fixture against "${updated.data.opponent}" updated successfully.`);
                 setSelectedMatch(updated.data);
                 fetchMatchesList();
             } else {
                 // CREATE RECORD
                 const created = await createMatch(payload);
+                invalidateCatalog("matches");
                 setFormSuccess(`New match fixture against "${created.data.opponent}" created successfully.`);
                 setSelectedMatch(created.data);
                 fetchMatchesList();
@@ -429,6 +436,7 @@ export default function AdminMatches() {
 
         try {
             await deleteMatch(matchToDelete._id);
+            invalidateCatalog("matches");
             setMatchToDelete(null);
 
             if (selectedMatch?._id === matchToDelete._id) {
@@ -505,7 +513,10 @@ export default function AdminMatches() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchMatchesList}
+                        onClick={() => {
+                            invalidateCatalog("matches");
+                            fetchMatchesList();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -651,7 +662,7 @@ export default function AdminMatches() {
                                     <label className="text-[10px] uppercase font-semibold text-[#6B665F]">Result</label>
                                     <AdminSelect
                                         value={resultFilter}
-                                        onChange={(val) => setResultFilter(val as any)}
+                                        onChange={(val) => setResultFilter(val)}
                                         options={RESULT_FILTER_OPTIONS}
                                         placeholder="All Results"
                                     />

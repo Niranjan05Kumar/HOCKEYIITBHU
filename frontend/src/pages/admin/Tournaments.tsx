@@ -18,13 +18,8 @@ import {
     ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-    getTournaments,
-    createTournament,
-    updateTournament,
-    deleteTournament,
-    getTournamentEditions,
-} from "@/api/tournaments";
+import { getTournaments, createTournament, updateTournament, deleteTournament } from "@/api/tournaments";
+import { getCachedTournamentEditions, invalidateCatalog } from "@/lib/catalogCache";
 import type { Tournament, TournamentCreateInput, TournamentEdition } from "@/types/tournament";
 import { tournamentFormSchema, type TournamentFormData, TOURNAMENT_TYPE_OPTIONS } from "@/schemas/tournamentSchema";
 import AdminSelect from "@/components/admin/AdminSelect";
@@ -131,10 +126,10 @@ export default function AdminTournaments() {
         fetchTournamentsList();
     }, [fetchTournamentsList]);
 
-    // Fetch tournament editions to calculate real edition counts per tournament
+    // Fetch tournament editions from shared cache to calculate real edition counts
     useEffect(() => {
-        getTournamentEditions({ limit: 100 })
-            .then((res) => setAllEditions(res.data))
+        getCachedTournamentEditions()
+            .then((data) => setAllEditions(data))
             .catch(() => setAllEditions([]));
     }, []);
 
@@ -285,6 +280,7 @@ export default function AdminTournaments() {
                 setSelectedLogoFile(null);
             }
 
+            invalidateCatalog("tournaments");
             await fetchTournamentsList();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "An error occurred while saving tournament record";
@@ -307,6 +303,7 @@ export default function AdminTournaments() {
                 switchModeToCreate();
             }
             setTournamentToDelete(null);
+            invalidateCatalog("tournaments");
             await fetchTournamentsList();
         } catch (err: unknown) {
             const msg =
@@ -339,7 +336,10 @@ export default function AdminTournaments() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchTournamentsList}
+                        onClick={() => {
+                            invalidateCatalog("tournaments");
+                            void fetchTournamentsList();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -805,7 +805,11 @@ export default function AdminTournaments() {
                                     </label>
                                     <AdminSelect
                                         value={watchedType}
-                                        onChange={(val) => setValue("type", val as any, { shouldValidate: true })}
+                                        onChange={(val) =>
+                                            setValue("type", val as TournamentFormData["type"], {
+                                                shouldValidate: true,
+                                            })
+                                        }
                                         options={TOURNAMENT_TYPE_OPTIONS.map((opt) => ({
                                             value: opt.value,
                                             label: opt.label,

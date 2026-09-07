@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Trophy, Award, Medal, AlertCircle, RotateCcw } from "lucide-react";
 import { getAchievements } from "@/api/achievements";
 import { getHistoryEvents } from "@/api/history";
+import { getCachedAchievements } from "@/lib/catalogCache";
 import type { Achievement, AchievementType, RecipientType } from "@/types/achievement";
 import type { HistoryEvent } from "@/types/history";
 import CustomSelect from "@/components/common/CustomSelect";
@@ -50,6 +51,13 @@ export default function Achievements() {
         setLoading(true);
         setError(null);
         try {
+            // Use in-memory catalog cache if default unfiltered view
+            if (selectedType === "ALL" && selectedRecipient === "ALL" && !selectedYear.trim()) {
+                const data = await getCachedAchievements();
+                setAchievements(data);
+                return;
+            }
+
             const queryParams: Record<string, unknown> = {
                 limit: 100,
                 sort: "year",
@@ -101,10 +109,15 @@ export default function Achievements() {
         }
     }, []);
 
+    // Fetch spotlight only once on initial mount
+    useEffect(() => {
+        void fetchSpotlight();
+    }, [fetchSpotlight]);
+
+    // Fetch achievements whenever filters change
     useEffect(() => {
         void fetchAchievements();
-        void fetchSpotlight();
-    }, [fetchAchievements, fetchSpotlight]);
+    }, [fetchAchievements]);
 
     // Segment achievements for display
     const { medalsList, titlesList } = useMemo(() => {
@@ -367,7 +380,7 @@ export default function Achievements() {
                         <div className="md:col-span-8 bg-[#ECE8E1] p-6 border border-[rgba(26,26,26,0.08)]">
                             <div className="relative w-full aspect-video overflow-hidden">
                                 <img
-                                    className="w-full h-full object-cover grayscale contrast-125"
+                                    className="w-full h-full object-cover"
                                     alt={spotlight.title}
                                     src={spotlight.photo || ARCHIVAL_PHOTO_FALLBACK}
                                     onError={(e) => {

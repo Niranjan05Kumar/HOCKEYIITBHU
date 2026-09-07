@@ -212,7 +212,7 @@ export default function TournamentDetail() {
                                     <img
                                         alt={`${tournament.name} Archival Record`}
                                         src={ARCHIVAL_PHOTO_URL}
-                                        className="w-full h-full object-cover grayscale contrast-125"
+                                        className="w-full h-full object-cover"
                                     />
                                     <div className="absolute bottom-2 right-2 bg-black/75 px-2 py-0.5 text-[#F4F1EA] text-[10px] font-mono tracking-wider">
                                         ARCHIVAL REF: {tournament.type}

@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Award, Calendar, AlertCircle, RotateCcw, Trophy, Users } from "lucide-react";
 import { getPlayerById } from "@/api/players";
-import { getTeams } from "@/api/teams";
-import { getAchievements } from "@/api/achievements";
-import { getTournamentEditions } from "@/api/tournaments";
+import { getCachedTeams, getCachedAchievements, getCachedTournamentEditions } from "@/lib/catalogCache";
 import type { Player } from "@/types/player";
 import type { Team } from "@/types/team";
 import type { Achievement } from "@/types/achievement";
@@ -66,16 +64,16 @@ export default function PlayerProfile() {
             }
             setPlayer(playerRes.data);
 
-            // Fetch related context concurrently
-            const [teamsRes, achievementsRes, editionsRes] = await Promise.all([
-                getTeams({ limit: 100 }).catch(() => ({ data: [] })),
-                getAchievements({ limit: 100 }).catch(() => ({ data: [] })),
-                getTournamentEditions({ limit: 100 }).catch(() => ({ data: [] })),
+            // Fetch related context concurrently from shared cache
+            const [teamsList, achievementsList, editionsList] = await Promise.all([
+                getCachedTeams().catch(() => []),
+                getCachedAchievements().catch(() => []),
+                getCachedTournamentEditions().catch(() => []),
             ]);
 
-            setTeams(teamsRes.data || []);
-            setAchievements(achievementsRes.data || []);
-            setEditions(editionsRes.data || []);
+            setTeams(teamsList);
+            setAchievements(achievementsList);
+            setEditions(editionsList);
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Failed to load player profile from server";
             if (errorMessage.toLowerCase().includes("not found") || errorMessage.includes("404")) {
@@ -292,7 +290,7 @@ export default function PlayerProfile() {
                                 onError={(e) => {
                                     e.currentTarget.src = ARCHIVAL_PORTRAIT_FALLBACKS[0];
                                 }}
-                                className="w-full h-full object-cover filter grayscale sepia-[.3] contrast-125 transition-all duration-500"
+                                className="w-full h-full object-cover transition-all duration-500"
                             />
                         </div>
 

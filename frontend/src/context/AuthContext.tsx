@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getCurrentAdmin, login as apiLogin, logout as apiLogout } from "@/api/auth";
-import type { AdminUser, AuthState, LoginPayload } from "@/types/auth";
+import type { AdminUser, AuthResponseData, AuthState, LoginPayload } from "@/types/auth";
+import type { ApiResponse } from "@/types/api";
 import { AuthContext } from "./AuthContextDefinition";
+
+let activeAuthCheckPromise: Promise<ApiResponse<AuthResponseData>> | null = null;
 
 export interface AuthProviderProps {
     children: ReactNode;
@@ -14,10 +17,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Determines if an authenticated session currently exists
     const isAuthenticated = useMemo(() => admin !== null, [admin]);
 
-    // Checks current session with backend via GET /api/v1/auth/me
+    // Checks current session with backend via GET /api/v1/auth/me with in-flight deduplication
     const refreshAuth = useCallback(async () => {
         try {
-            const response = await getCurrentAdmin();
+            if (!activeAuthCheckPromise) {
+                activeAuthCheckPromise = getCurrentAdmin();
+            }
+            const response = await activeAuthCheckPromise;
             if (response.data?.admin) {
                 setAdmin(response.data.admin);
             } else {
@@ -27,6 +33,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // Unauthenticated or expired session
             setAdmin(null);
         } finally {
+            activeAuthCheckPromise = null;
             setLoading(false);
         }
     }, []);

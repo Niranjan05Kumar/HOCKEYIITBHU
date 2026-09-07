@@ -12,7 +12,7 @@ export default function NotFound() {
                     <img
                         src={CREST_URL}
                         alt="IIT (BHU) Hockey Crest"
-                        className="w-16 h-16 object-contain opacity-85"
+                        className="w-16 h-16 object-contain"
                         onError={(e) => {
                             e.currentTarget.style.display = "none";
                         }}

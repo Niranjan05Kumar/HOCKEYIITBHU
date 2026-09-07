@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, Search, AlertCircle, RotateCcw, ArrowRight } from "lucide-react";
 import { getTournaments } from "@/api/tournaments";
+import { getCachedTournaments } from "@/lib/catalogCache";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { Tournament, TournamentQuery } from "@/types/tournament";
 
 const CATEGORY_FILTERS = [
@@ -19,12 +21,20 @@ export default function Tournaments() {
 
     const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const debouncedSearch = useDebounce(searchQuery, 300);
 
     const fetchTournaments = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         try {
+            // If viewing all with no search query, leverage shared in-memory catalog cache
+            if (selectedCategory === "ALL" && !debouncedSearch.trim()) {
+                const data = await getCachedTournaments();
+                setTournaments(data);
+                return;
+            }
+
             const queryParams: TournamentQuery = {
                 limit: 100,
                 sort: "name",
@@ -35,8 +45,8 @@ export default function Tournaments() {
                 queryParams.type = selectedCategory;
             }
 
-            if (searchQuery.trim()) {
-                queryParams.name = searchQuery.trim();
+            if (debouncedSearch.trim()) {
+                queryParams.name = debouncedSearch.trim();
             }
 
             const response = await getTournaments(queryParams);
@@ -47,7 +57,7 @@ export default function Tournaments() {
         } finally {
             setLoading(false);
         }
-    }, [selectedCategory, searchQuery]);
+    }, [selectedCategory, debouncedSearch]);
 
     useEffect(() => {
         void fetchTournaments();

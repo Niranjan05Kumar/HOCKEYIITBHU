@@ -66,8 +66,7 @@ export default function AdminSelect({
         const query = search.toLowerCase().trim();
         return options.filter(
             (opt) =>
-                opt.label.toLowerCase().includes(query) ||
-                (opt.sublabel && opt.sublabel.toLowerCase().includes(query)),
+                opt.label.toLowerCase().includes(query) || (opt.sublabel && opt.sublabel.toLowerCase().includes(query)),
         );
     }, [options, search, isSearchable]);
 
@@ -139,15 +138,17 @@ export default function AdminSelect({
                         if (!isOpen) setSearch("");
                     }
                 }}
-                className={`w-full bg-[#FCF9F2] border rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer transition-colors ${disabled
+                className={`w-full bg-[#FCF9F2] border rounded px-3 py-2 text-xs text-[#1A1A1A] flex items-center justify-between cursor-pointer transition-colors ${
+                    disabled
                         ? "opacity-50 cursor-not-allowed border-[rgba(26,26,26,0.1)] bg-[#f6f3ec]"
                         : "hover:border-[#3d030b]"
-                    } ${isOpen
+                } ${
+                    isOpen
                         ? "border-[#3d030b] ring-1 ring-[#3d030b]/20"
                         : error
-                            ? "border-[#ba1a1a]"
-                            : "border-[rgba(26,26,26,0.15)]"
-                    } ${triggerClassName}`}
+                          ? "border-[#ba1a1a]"
+                          : "border-[rgba(26,26,26,0.15)]"
+                } ${triggerClassName}`}
             >
                 <div className="flex items-center gap-2 truncate pr-2">
                     {icon && <span className="shrink-0 text-[#6B665F]">{icon}</span>}
@@ -156,8 +157,9 @@ export default function AdminSelect({
                     </span>
                 </div>
                 <ChevronDown
-                    className={`w-4 h-4 text-[#6B665F] shrink-0 transition-transform duration-150 ${isOpen ? "rotate-180 text-[#3d030b]" : ""
-                        }`}
+                    className={`w-4 h-4 text-[#6B665F] shrink-0 transition-transform duration-150 ${
+                        isOpen ? "rotate-180 text-[#3d030b]" : ""
+                    }`}
                 />
             </div>
 
@@ -187,8 +189,9 @@ export default function AdminSelect({
                         {allowClear && (
                             <div
                                 onClick={handleClear}
-                                className={`px-2.5 py-1.5 rounded text-xs text-[#6B665F] hover:bg-[#ECE8E1] cursor-pointer transition-colors ${!value ? "bg-[#ECE8E1] font-semibold text-[#3d030b]" : ""
-                                    }`}
+                                className={`px-2.5 py-1.5 rounded text-xs text-[#6B665F] hover:bg-[#ECE8E1] cursor-pointer transition-colors ${
+                                    !value ? "bg-[#ECE8E1] font-semibold text-[#3d030b]" : ""
+                                }`}
                             >
                                 {clearLabel}
                             </div>
@@ -212,13 +215,11 @@ export default function AdminSelect({
                                                 handleSelect(opt.value);
                                             }
                                         }}
-                                        className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer transition-colors ${opt.disabled
-                                                ? "opacity-40 cursor-not-allowed"
-                                                : "hover:bg-[#ECE8E1]"
-                                            } ${isSelected
-                                                ? "bg-[#ECE8E1] font-semibold text-[#3d030b]"
-                                                : "text-[#1A1A1A]"
-                                            }`}
+                                        className={`px-2.5 py-1.5 rounded text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                                            opt.disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-[#ECE8E1]"
+                                        } ${
+                                            isSelected ? "bg-[#ECE8E1] font-semibold text-[#3d030b]" : "text-[#1A1A1A]"
+                                        }`}
                                     >
                                         <div className="truncate pr-2">
                                             <div className="truncate">{opt.label}</div>
@@ -228,9 +229,7 @@ export default function AdminSelect({
                                                 </div>
                                             )}
                                         </div>
-                                        {isSelected && (
-                                            <Check className="w-3.5 h-3.5 text-[#3d030b] shrink-0" />
-                                        )}
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-[#3d030b] shrink-0" />}
                                     </div>
                                 );
                             })

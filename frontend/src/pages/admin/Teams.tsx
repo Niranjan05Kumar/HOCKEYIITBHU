@@ -19,8 +19,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getTeams, createTeam, updateTeam, deleteTeam } from "@/api/teams";
-import { getPlayers } from "@/api/players";
-import { getAchievements } from "@/api/achievements";
+import { getCachedPlayers, getCachedAchievements, invalidateCatalog } from "@/lib/catalogCache";
 import type { Team, TeamCreateInput } from "@/types/team";
 import type { Player } from "@/types/player";
 import type { Achievement } from "@/types/achievement";
@@ -166,20 +165,15 @@ export default function AdminTeams() {
         fetchTeamsList();
     }, [fetchTeamsList]);
 
-    // Load available players for squad assignment & captain selection
+    // Load available players and achievements once for squad assignment and cross-linking
     useEffect(() => {
         setPlayersLoading(true);
-        getPlayers({ limit: 100 })
-            .then((res) => setCatalogPlayers(res.data))
-            .catch(() => setCatalogPlayers([]))
+        Promise.all([getCachedPlayers().catch(() => []), getCachedAchievements().catch(() => [])])
+            .then(([players, achievements]) => {
+                setCatalogPlayers(players);
+                setCatalogAchievements(achievements);
+            })
             .finally(() => setPlayersLoading(false));
-    }, []);
-
-    // Load available achievements for cross-linking
-    useEffect(() => {
-        getAchievements({ limit: 100 })
-            .then((res) => setCatalogAchievements(res.data))
-            .catch(() => setCatalogAchievements([]));
     }, []);
 
     // Close player dropdown on outside click
@@ -329,8 +323,6 @@ export default function AdminTeams() {
         );
     };
 
-
-
     // -------------------------------------------------------------------------
     // Achievement Association Handlers
     // -------------------------------------------------------------------------
@@ -388,6 +380,7 @@ export default function AdminTeams() {
                 setSelectedPhotoFile(null);
             }
 
+            invalidateCatalog("teams");
             await fetchTeamsList();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "An error occurred while committing team dossier";
@@ -410,6 +403,7 @@ export default function AdminTeams() {
                 switchModeToCreate();
             }
             setTeamToDelete(null);
+            invalidateCatalog("teams");
             await fetchTeamsList();
         } catch (err: unknown) {
             const msg =
@@ -438,7 +432,10 @@ export default function AdminTeams() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchTeamsList}
+                        onClick={() => {
+                            invalidateCatalog("teams");
+                            void fetchTeamsList();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -938,7 +935,9 @@ export default function AdminTeams() {
                                             onChange={(newCaptainId) => {
                                                 setValue("captain", newCaptainId, { shouldValidate: true });
                                                 if (newCaptainId && !watchedPlayers.includes(newCaptainId)) {
-                                                    setValue("players", [...watchedPlayers, newCaptainId], { shouldValidate: true });
+                                                    setValue("players", [...watchedPlayers, newCaptainId], {
+                                                        shouldValidate: true,
+                                                    });
                                                 }
                                             }}
                                             options={[
@@ -967,7 +966,9 @@ export default function AdminTeams() {
                                             onChange={(newVCId) => {
                                                 setValue("viceCaptain", newVCId, { shouldValidate: true });
                                                 if (newVCId && !watchedPlayers.includes(newVCId)) {
-                                                    setValue("players", [...watchedPlayers, newVCId], { shouldValidate: true });
+                                                    setValue("players", [...watchedPlayers, newVCId], {
+                                                        shouldValidate: true,
+                                                    });
                                                 }
                                             }}
                                             options={[

@@ -18,9 +18,13 @@ import {
     BookOpen,
 } from "lucide-react";
 import { getHistoryEvents, createHistoryEvent, updateHistoryEvent, deleteHistoryEvent } from "@/api/history";
-import { getTournaments, getTournamentEditions } from "@/api/tournaments";
-import { getAchievements } from "@/api/achievements";
-import { getGalleryItems } from "@/api/gallery";
+import {
+    getCachedTournaments,
+    getCachedTournamentEditions,
+    getCachedAchievements,
+    getCachedGalleryItems,
+    invalidateCatalog,
+} from "@/lib/catalogCache";
 import type { HistoryEvent, HistoryEventCreateInput, HistoryCategory } from "@/types/history";
 import type { Tournament, TournamentEdition } from "@/types/tournament";
 import type { Achievement } from "@/types/achievement";
@@ -124,37 +128,46 @@ export default function AdminHistory() {
     const watchedTournament = watch("tournament");
     const watchedAchievement = watch("achievement");
 
-    const tournamentFilterOptions = useMemo(() => [
-        { value: "all", label: "All Competitions" },
-        ...tournaments.map((t) => ({ value: t._id, label: t.name })),
-    ], [tournaments]);
+    const tournamentFilterOptions = useMemo(
+        () => [
+            { value: "all", label: "All Competitions" },
+            ...tournaments.map((t) => ({ value: t._id, label: t.name })),
+        ],
+        [tournaments],
+    );
 
-    const relatedTournamentOptions = useMemo(() => [
-        { value: "", label: "None (Standalone Milestone)" },
-        ...editions.map((ed) => {
-            const parent = tournaments.find((t) => t._id === ed.tournament);
-            const tName = parent ? parent.name : "Tournament";
-            return {
-                value: ed._id,
-                label: `${tName} — ${ed.edition} (${ed.year})`,
-                sublabel: "Tournament Edition",
-            };
-        }),
-        ...tournaments.map((t) => ({
-            value: t._id,
-            label: `${t.name} (${t.type})`,
-            sublabel: "General Tournament",
-        })),
-    ], [editions, tournaments]);
+    const relatedTournamentOptions = useMemo(
+        () => [
+            { value: "", label: "None (Standalone Milestone)" },
+            ...editions.map((ed) => {
+                const parent = tournaments.find((t) => t._id === ed.tournament);
+                const tName = parent ? parent.name : "Tournament";
+                return {
+                    value: ed._id,
+                    label: `${tName} — ${ed.edition} (${ed.year})`,
+                    sublabel: "Tournament Edition",
+                };
+            }),
+            ...tournaments.map((t) => ({
+                value: t._id,
+                label: `${t.name} (${t.type})`,
+                sublabel: "General Tournament",
+            })),
+        ],
+        [editions, tournaments],
+    );
 
-    const relatedAchievementOptions = useMemo(() => [
-        { value: "", label: "None (Standalone Milestone)" },
-        ...achievements.map((ach) => ({
-            value: ach._id,
-            label: `${ach.year} — ${ach.title}`,
-            sublabel: ach.type,
-        })),
-    ], [achievements]);
+    const relatedAchievementOptions = useMemo(
+        () => [
+            { value: "", label: "None (Standalone Milestone)" },
+            ...achievements.map((ach) => ({
+                value: ach._id,
+                label: `${ach.year} — ${ach.title}`,
+                sublabel: ach.type,
+            })),
+        ],
+        [achievements],
+    );
 
     // -------------------------------------------------------------------------
     // Load Relational Catalogues
@@ -162,16 +175,16 @@ export default function AdminHistory() {
     const fetchCatalogues = useCallback(async () => {
         try {
             const [tRes, edRes, achRes, galRes] = await Promise.all([
-                getTournaments({ limit: 100 }),
-                getTournamentEditions({ limit: 100 }),
-                getAchievements({ limit: 100 }),
-                getGalleryItems({ limit: 100 }),
+                getCachedTournaments(),
+                getCachedTournamentEditions(),
+                getCachedAchievements(),
+                getCachedGalleryItems(),
             ]);
 
-            setTournaments(tRes.data || []);
-            setEditions(edRes.data || []);
-            setAchievements(achRes.data || []);
-            setGalleryItems(galRes.data || []);
+            setTournaments(tRes || []);
+            setEditions(edRes || []);
+            setAchievements(achRes || []);
+            setGalleryItems(galRes || []);
         } catch (err) {
             console.error("Failed to load relational catalogues for history management:", err);
         }
@@ -400,11 +413,13 @@ export default function AdminHistory() {
             if (selectedEvent) {
                 // Update
                 const response = await updateHistoryEvent(selectedEvent._id, payload);
+                invalidateCatalog("history");
                 setFormSuccess(`Chronicle milestone "${response.data.title}" updated successfully.`);
                 setSelectedEvent(response.data);
             } else {
                 // Create
                 const response = await createHistoryEvent(payload);
+                invalidateCatalog("history");
                 setFormSuccess(`Chronicle milestone "${response.data.title}" committed to the permanent archive.`);
                 setSelectedEvent(response.data);
             }
@@ -440,6 +455,7 @@ export default function AdminHistory() {
 
         try {
             await deleteHistoryEvent(eventToDelete._id);
+            invalidateCatalog("history");
 
             // If active in editor, clear it
             if (selectedEvent?._id === eventToDelete._id) {
@@ -513,7 +529,10 @@ export default function AdminHistory() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchEvents}
+                        onClick={() => {
+                            invalidateCatalog("history");
+                            fetchEvents();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -940,7 +959,11 @@ export default function AdminHistory() {
                                         </label>
                                         <AdminSelect
                                             value={watchedCategory}
-                                            onChange={(val) => setValue("category", val as any, { shouldValidate: true })}
+                                            onChange={(val) =>
+                                                setValue("category", val as HistoryFormData["category"], {
+                                                    shouldValidate: true,
+                                                })
+                                            }
                                             options={CATEGORY_FORM_OPTIONS}
                                             error={Boolean(errors.category)}
                                         />

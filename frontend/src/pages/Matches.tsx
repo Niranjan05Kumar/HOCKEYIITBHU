@@ -97,21 +97,27 @@ export default function Matches() {
         return Array.from(set).sort();
     }, [matches]);
 
-    const editionOptions = useMemo(() => [
-        { value: "", label: "All Tournament Editions" },
-        ...editions.map((ed) => ({
-            value: ed._id,
-            label: `${ed.edition} (${ed.year})`,
-        })),
-    ], [editions]);
+    const editionOptions = useMemo(
+        () => [
+            { value: "", label: "All Tournament Editions" },
+            ...editions.map((ed) => ({
+                value: ed._id,
+                label: `${ed.edition} (${ed.year})`,
+            })),
+        ],
+        [editions],
+    );
 
-    const stageOptions = useMemo(() => [
-        { value: "ALL", label: "All Stages" },
-        ...availableStages.map((stage) => ({
-            value: stage,
-            label: stage,
-        })),
-    ], [availableStages]);
+    const stageOptions = useMemo(
+        () => [
+            { value: "ALL", label: "All Stages" },
+            ...availableStages.map((stage) => ({
+                value: stage,
+                label: stage,
+            })),
+        ],
+        [availableStages],
+    );
 
     // Filtered matches
     const filteredMatches = useMemo(() => {

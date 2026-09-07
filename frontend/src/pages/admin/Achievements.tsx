@@ -22,10 +22,13 @@ import {
     Shield,
 } from "lucide-react";
 import { getAchievements, createAchievement, updateAchievement, deleteAchievement } from "@/api/achievements";
-import { getTournaments } from "@/api/tournaments";
-import { getPlayers } from "@/api/players";
-import { getTeams } from "@/api/teams";
-import { getGalleryItems } from "@/api/gallery";
+import {
+    getCachedTournaments,
+    getCachedPlayers,
+    getCachedTeams,
+    getCachedGalleryItems,
+    invalidateCatalog,
+} from "@/lib/catalogCache";
 import type { Achievement, AchievementType, RecipientType, AchievementCreateInput } from "@/types/achievement";
 import type { Tournament } from "@/types/tournament";
 import type { Player } from "@/types/player";
@@ -144,13 +147,16 @@ export default function AdminAchievements() {
     const playersMap = useMemo(() => new Map(players.map((p) => [p._id, p])), [players]);
     const teamsMap = useMemo(() => new Map(teams.map((t) => [t._id, t])), [teams]);
 
-    const tournamentSelectOptions = useMemo(() => [
-        { value: "", label: "None / Non-Tournament Distinction" },
-        ...tournaments.map((t) => ({
-            value: t._id,
-            label: `${t.name} (${t.type || "Varsity Circuit"})`,
-        })),
-    ], [tournaments]);
+    const tournamentSelectOptions = useMemo(
+        () => [
+            { value: "", label: "None / Non-Tournament Distinction" },
+            ...tournaments.map((t) => ({
+                value: t._id,
+                label: `${t.name} (${t.type || "Varsity Circuit"})`,
+            })),
+        ],
+        [tournaments],
+    );
 
     const recipientEntityOptions = useMemo(() => {
         if (watchedRecipientType === "Player") {
@@ -179,17 +185,17 @@ export default function AdminAchievements() {
         const loadCatalogues = async () => {
             try {
                 const [tournamentsRes, playersRes, teamsRes, galleryRes] = await Promise.all([
-                    getTournaments({ limit: 100 }).catch(() => ({ data: [] })),
-                    getPlayers({ limit: 200 }).catch(() => ({ data: [] })),
-                    getTeams({ limit: 100 }).catch(() => ({ data: [] })),
-                    getGalleryItems({ limit: 60 }).catch(() => ({ data: [] })),
+                    getCachedTournaments().catch(() => []),
+                    getCachedPlayers().catch(() => []),
+                    getCachedTeams().catch(() => []),
+                    getCachedGalleryItems().catch(() => []),
                 ]);
 
                 if (isMounted) {
-                    setTournaments(tournamentsRes.data || []);
-                    setPlayers(playersRes.data || []);
-                    setTeams(teamsRes.data || []);
-                    setGalleryItems(galleryRes.data || []);
+                    setTournaments(tournamentsRes || []);
+                    setPlayers(playersRes || []);
+                    setTeams(teamsRes || []);
+                    setGalleryItems(galleryRes || []);
                 }
             } catch (err) {
                 console.error("Failed to load relational catalogues", err);
@@ -382,11 +388,13 @@ export default function AdminAchievements() {
             if (selectedAchievement) {
                 // Update
                 const res = await updateAchievement(selectedAchievement._id, payload);
+                invalidateCatalog("achievements");
                 setFormSuccess(`Achievement "${res.data.title}" updated successfully in the archive.`);
                 setSelectedAchievement(res.data);
             } else {
                 // Create
                 const res = await createAchievement(payload);
+                invalidateCatalog("achievements");
                 setFormSuccess(`New achievement "${res.data.title}" ingested into the archive register.`);
                 setSelectedAchievement(res.data);
             }
@@ -418,6 +426,7 @@ export default function AdminAchievements() {
             setDeleting(true);
             setDeleteError(null);
             await deleteAchievement(achievementToDelete._id);
+            invalidateCatalog("achievements");
 
             if (selectedAchievement?._id === achievementToDelete._id) {
                 handleStartCreate();
@@ -483,8 +492,6 @@ export default function AdminAchievements() {
         }
     };
 
-
-
     // Currently selected recipient summary
     const selectedRecipientDisplay = useMemo(() => {
         if (!watchedRecipient) return null;
@@ -519,7 +526,10 @@ export default function AdminAchievements() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchAchievementsList}
+                        onClick={() => {
+                            invalidateCatalog("achievements");
+                            fetchAchievementsList();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -992,7 +1002,11 @@ export default function AdminAchievements() {
                                         </label>
                                         <AdminSelect
                                             value={watchedType}
-                                            onChange={(val) => setValue("type", val as any, { shouldValidate: true })}
+                                            onChange={(val) =>
+                                                setValue("type", val as AchievementFormData["type"], {
+                                                    shouldValidate: true,
+                                                })
+                                            }
                                             options={ACHIEVEMENT_TYPE_FORM_OPTIONS}
                                             error={Boolean(errors.type)}
                                         />

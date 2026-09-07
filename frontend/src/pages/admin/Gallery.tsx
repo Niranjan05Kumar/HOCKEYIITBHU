@@ -18,8 +18,12 @@ import {
     UserCheck,
 } from "lucide-react";
 import { getGalleryItems, createGalleryItem, updateGalleryItem, deleteGalleryItem } from "@/api/gallery";
-import { getTournaments, getTournamentEditions } from "@/api/tournaments";
-import { getPlayers } from "@/api/players";
+import {
+    getCachedTournaments,
+    getCachedTournamentEditions,
+    getCachedPlayers,
+    invalidateCatalog,
+} from "@/lib/catalogCache";
 import type { GalleryItem, GalleryItemCreateInput, GalleryCategory } from "@/types/gallery";
 import type { Tournament, TournamentEdition } from "@/types/tournament";
 import type { Player } from "@/types/player";
@@ -120,36 +124,45 @@ export default function AdminGallery() {
     const watchedCategory = watch("category");
     const watchedTournament = watch("tournament");
 
-    const tournamentFilterOptions = useMemo(() => [
-        { value: "all", label: "All Tournaments" },
-        ...tournaments.map((t) => ({ value: t._id, label: t.name })),
-    ], [tournaments]);
+    const tournamentFilterOptions = useMemo(
+        () => [
+            { value: "all", label: "All Tournaments" },
+            ...tournaments.map((t) => ({ value: t._id, label: t.name })),
+        ],
+        [tournaments],
+    );
 
-    const playerFilterOptions = useMemo(() => [
-        { value: "all", label: "Any Tagged Player" },
-        ...players.map((p) => ({
-            value: p._id,
-            label: `${p.name}${p.jerseyNumber ? ` (#${p.jerseyNumber})` : ""}`,
-        })),
-    ], [players]);
+    const playerFilterOptions = useMemo(
+        () => [
+            { value: "all", label: "Any Tagged Player" },
+            ...players.map((p) => ({
+                value: p._id,
+                label: `${p.name}${p.jerseyNumber ? ` (#${p.jerseyNumber})` : ""}`,
+            })),
+        ],
+        [players],
+    );
 
-    const relatedTournamentOptions = useMemo(() => [
-        { value: "", label: "None / Institutional Archival Only" },
-        ...editions.map((ed) => {
-            const parent = tournaments.find((t) => t._id === ed.tournament);
-            const tName = parent ? parent.name : "Tournament";
-            return {
-                value: ed._id,
-                label: `${tName} — ${ed.edition} (${ed.year})`,
-                sublabel: "Tournament Edition",
-            };
-        }),
-        ...tournaments.map((t) => ({
-            value: t._id,
-            label: `${t.name} (${t.type})`,
-            sublabel: "General Tournament",
-        })),
-    ], [editions, tournaments]);
+    const relatedTournamentOptions = useMemo(
+        () => [
+            { value: "", label: "None / Institutional Archival Only" },
+            ...editions.map((ed) => {
+                const parent = tournaments.find((t) => t._id === ed.tournament);
+                const tName = parent ? parent.name : "Tournament";
+                return {
+                    value: ed._id,
+                    label: `${tName} — ${ed.edition} (${ed.year})`,
+                    sublabel: "Tournament Edition",
+                };
+            }),
+            ...tournaments.map((t) => ({
+                value: t._id,
+                label: `${t.name} (${t.type})`,
+                sublabel: "General Tournament",
+            })),
+        ],
+        [editions, tournaments],
+    );
 
     const taggablePlayerOptions = useMemo(() => {
         return players
@@ -167,14 +180,14 @@ export default function AdminGallery() {
     const fetchCatalogues = useCallback(async () => {
         try {
             const [tRes, edRes, pRes] = await Promise.all([
-                getTournaments({ limit: 100 }),
-                getTournamentEditions({ limit: 100 }),
-                getPlayers({ limit: 100 }),
+                getCachedTournaments(),
+                getCachedTournamentEditions(),
+                getCachedPlayers(),
             ]);
 
-            setTournaments(tRes.data || []);
-            setEditions(edRes.data || []);
-            setPlayers(pRes.data || []);
+            setTournaments(tRes || []);
+            setEditions(edRes || []);
+            setPlayers(pRes || []);
         } catch (err) {
             console.error("Failed to load relational catalogues for gallery management:", err);
         }
@@ -431,8 +444,6 @@ export default function AdminGallery() {
         setValue("taggedPlayers", next);
     };
 
-
-
     // -------------------------------------------------------------------------
     // Form Submission: Create or Update
     // -------------------------------------------------------------------------
@@ -482,6 +493,7 @@ export default function AdminGallery() {
             if (selectedItem) {
                 // Update
                 const response = await updateGalleryItem(selectedItem._id, payload, selectedFile || undefined);
+                invalidateCatalog("gallery");
                 setFormSuccess(`Gallery asset "${response.data.caption || response.data._id}" updated successfully.`);
                 setSelectedItem(response.data);
                 setPreviewUrl(response.data.imageUrl);
@@ -493,6 +505,7 @@ export default function AdminGallery() {
             } else {
                 // Create
                 const response = await createGalleryItem(payload, selectedFile || undefined);
+                invalidateCatalog("gallery");
                 setFormSuccess(`Gallery asset committed to the permanent archive.`);
                 setSelectedItem(response.data);
                 setPreviewUrl(response.data.imageUrl);
@@ -534,6 +547,7 @@ export default function AdminGallery() {
 
         try {
             await deleteGalleryItem(itemToDelete._id);
+            invalidateCatalog("gallery");
 
             // If active in editor, reset
             if (selectedItem?._id === itemToDelete._id) {
@@ -590,7 +604,10 @@ export default function AdminGallery() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchItems}
+                        onClick={() => {
+                            invalidateCatalog("gallery");
+                            fetchItems();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -1150,7 +1167,11 @@ export default function AdminGallery() {
                                         </label>
                                         <AdminSelect
                                             value={watchedCategory}
-                                            onChange={(val) => setValue("category", val as any, { shouldValidate: true })}
+                                            onChange={(val) =>
+                                                setValue("category", val as GalleryFormData["category"], {
+                                                    shouldValidate: true,
+                                                })
+                                            }
                                             options={CATEGORY_FORM_OPTIONS}
                                             error={Boolean(errors.category)}
                                         />

@@ -168,10 +168,11 @@ export default function Roster() {
                     <button
                         type="button"
                         onClick={() => setFilterBarOpen((prev) => !prev)}
-                        className={`px-5 py-2 rounded-none border text-xs font-medium uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${filterBarOpen || hasActiveFilters
+                        className={`px-5 py-2 rounded-none border text-xs font-medium uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+                            filterBarOpen || hasActiveFilters
                                 ? "bg-[#ECE8E1] border-[rgba(26,26,26,0.25)] text-[#1A1A1A]"
                                 : "bg-[#fcf9f2] border-[rgba(26,26,26,0.12)] text-[#6B665F] hover:bg-[#E2DDD4]"
-                            }`}
+                        }`}
                     >
                         <Filter className="w-3.5 h-3.5" />
                         Filters
@@ -190,30 +191,33 @@ export default function Roster() {
                             <button
                                 type="button"
                                 onClick={() => setStatusFilter("ALL")}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${statusFilter === "ALL"
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                    statusFilter === "ALL"
                                         ? "bg-[#5a181e] text-[#F4F1EA]"
                                         : "bg-[#fcf9f2] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] text-[#1A1A1A]"
-                                    }`}
+                                }`}
                             >
                                 All
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setStatusFilter("current")}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${statusFilter === "current"
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                    statusFilter === "current"
                                         ? "bg-[#5a181e] text-[#F4F1EA]"
                                         : "bg-[#fcf9f2] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] text-[#1A1A1A]"
-                                    }`}
+                                }`}
                             >
                                 Current
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setStatusFilter("former")}
-                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${statusFilter === "former"
+                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                    statusFilter === "former"
                                         ? "bg-[#5a181e] text-[#F4F1EA]"
                                         : "bg-[#fcf9f2] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] text-[#1A1A1A]"
-                                    }`}
+                                }`}
                             >
                                 Alumni
                             </button>
@@ -348,15 +352,16 @@ export default function Roster() {
                                         onError={(e) => {
                                             e.currentTarget.src = ARCHIVAL_PLAYER_PHOTOS[0];
                                         }}
-                                        className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500 border border-[rgba(26,26,26,0.1)]"
+                                        className="w-full h-full object-cover transition-all duration-500 border border-[rgba(26,26,26,0.1)]"
                                         loading="lazy"
                                     />
                                     {/* Status Pill Badge */}
                                     <div
-                                        className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[11px] font-medium uppercase tracking-wider ${isCurrent
+                                        className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[11px] font-medium uppercase tracking-wider ${
+                                            isCurrent
                                                 ? "bg-[#2D5A3D] text-white"
                                                 : "bg-[#ECE8E1] text-[#6B665F] border border-[rgba(26,26,26,0.12)]"
-                                            }`}
+                                        }`}
                                     >
                                         {isCurrent ? "Current" : "Alumni"}
                                     </div>

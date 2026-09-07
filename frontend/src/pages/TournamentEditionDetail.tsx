@@ -21,10 +21,15 @@ import {
 } from "lucide-react";
 import { getTournamentEditionById, getTournamentById } from "@/api/tournaments";
 import { getTeamById } from "@/api/teams";
-import { getPlayerById, getPlayers } from "@/api/players";
+import { getPlayerById } from "@/api/players";
 import { getMatches } from "@/api/matches";
-import { getAchievements } from "@/api/achievements";
-import { getGalleryItems } from "@/api/gallery";
+import {
+    getCachedTournaments,
+    getCachedTeams,
+    getCachedPlayers,
+    getCachedAchievements,
+    getCachedGalleryItems,
+} from "@/lib/catalogCache";
 import type { Tournament, TournamentEdition } from "@/types/tournament";
 import type { Team } from "@/types/team";
 import type { Player } from "@/types/player";
@@ -82,101 +87,108 @@ export default function TournamentEditionDetail() {
 
             setEdition(ed);
 
-            // 2. Fetch related data concurrently
-            const promises: Promise<unknown>[] = [];
+            // 2. Fetch related data concurrently leveraging shared catalog cache
+            const [matchesRes, allTournaments, allTeams, allPlayers, allAchievements, allGallery] = await Promise.all([
+                getMatches({ tournamentEditionId: ed._id, limit: 100 }).catch(() => ({ data: [] })),
+                getCachedTournaments().catch(() => []),
+                getCachedTeams().catch(() => []),
+                getCachedPlayers().catch(() => []),
+                getCachedAchievements().catch(() => []),
+                getCachedGalleryItems().catch(() => []),
+            ]);
+
+            setMatches(matchesRes.data || []);
 
             // A. Tournament details
             if (ed.tournament) {
-                promises.push(
+                const tour = allTournaments.find((t) => t._id === ed.tournament);
+                if (tour) {
+                    setTournament(tour);
+                } else {
                     getTournamentById(ed.tournament)
                         .then((res) => setTournament(res.data))
-                        .catch(() => setTournament(null)),
-                );
+                        .catch(() => setTournament(null));
+                }
+            } else {
+                setTournament(null);
             }
 
-            // B. Matches for this edition
-            promises.push(
-                getMatches({ tournamentEditionId: ed._id, limit: 100 })
-                    .then((res) => setMatches(res.data || []))
-                    .catch(() => setMatches([])),
-            );
-
-            // C. Team / Squad details
+            // B. Team / Squad details
             if (ed.team) {
-                promises.push(
+                const tm = allTeams.find((t) => t._id === ed.team);
+                if (tm) {
+                    setTeam(tm);
+                    if (tm.players && tm.players.length > 0) {
+                        const teamPlayerIds = new Set(tm.players);
+                        setSquadPlayers(allPlayers.filter((p) => teamPlayerIds.has(p._id)));
+                    } else {
+                        setSquadPlayers([]);
+                    }
+                } else {
                     getTeamById(ed.team)
-                        .then(async (res) => {
+                        .then((res) => {
                             const teamData = res.data;
                             setTeam(teamData);
                             if (teamData?.players && teamData.players.length > 0) {
-                                // Fetch player records
-                                try {
-                                    const allPlayersRes = await getPlayers({ limit: 100 });
-                                    const teamPlayerIds = new Set(teamData.players);
-                                    const matched = (allPlayersRes.data || []).filter((p) => teamPlayerIds.has(p._id));
-                                    setSquadPlayers(matched);
-                                } catch {
-                                    setSquadPlayers([]);
-                                }
+                                const teamPlayerIds = new Set(teamData.players);
+                                setSquadPlayers(allPlayers.filter((p) => teamPlayerIds.has(p._id)));
+                            } else {
+                                setSquadPlayers([]);
                             }
                         })
-                        .catch(() => setTeam(null)),
-                );
+                        .catch(() => setTeam(null));
+                }
+            } else {
+                setTeam(null);
+                setSquadPlayers([]);
             }
 
-            // D. Captain
+            // C. Captain
             if (ed.captain) {
-                promises.push(
+                const capt = allPlayers.find((p) => p._id === ed.captain);
+                if (capt) {
+                    setCaptain(capt);
+                } else {
                     getPlayerById(ed.captain)
                         .then((res) => setCaptain(res.data))
-                        .catch(() => setCaptain(null)),
-                );
+                        .catch(() => setCaptain(null));
+                }
+            } else {
+                setCaptain(null);
             }
 
-            // E. Vice-Captain
+            // D. Vice-Captain
             if (ed.viceCaptain) {
-                promises.push(
+                const vc = allPlayers.find((p) => p._id === ed.viceCaptain);
+                if (vc) {
+                    setViceCaptain(vc);
+                } else {
                     getPlayerById(ed.viceCaptain)
                         .then((res) => setViceCaptain(res.data))
-                        .catch(() => setViceCaptain(null)),
-                );
+                        .catch(() => setViceCaptain(null));
+                }
+            } else {
+                setViceCaptain(null);
             }
 
-            // F. Achievements & Awards
-            promises.push(
-                getAchievements({ limit: 100 })
-                    .then((res) => {
-                        const items = res.data || [];
-                        // Match either by tournament ID or tournament edition ID or explicit achievements
-                        const matched = items.filter(
-                            (a) =>
-                                (ed.tournament && a.tournament === ed.tournament) ||
-                                (a.year && a.year === ed.year) ||
-                                (ed.achievements && ed.achievements.includes(a._id)) ||
-                                (ed.awards && ed.awards.includes(a._id)),
-                        );
-                        setAchievements(matched);
-                    })
-                    .catch(() => setAchievements([])),
+            // E. Achievements & Awards
+            const matchedAchievements = allAchievements.filter(
+                (a) =>
+                    (ed.tournament && a.tournament === ed.tournament) ||
+                    (a.year && a.year === ed.year) ||
+                    (ed.achievements && ed.achievements.includes(a._id)) ||
+                    (ed.awards && ed.awards.includes(a._id)),
             );
+            setAchievements(matchedAchievements);
 
-            // G. Gallery media
-            promises.push(
-                getGalleryItems({ limit: 50 })
-                    .then((res) => {
-                        const items = res.data || [];
-                        const matched = items.filter(
-                            (g) =>
-                                g.tournament === ed._id ||
-                                (ed.tournament && g.tournament === ed.tournament) ||
-                                (ed.photos && ed.photos.includes(g._id)),
-                        );
-                        setGallery(matched);
-                    })
-                    .catch(() => setGallery([])),
+            // F. Gallery media
+            const matchedGallery = allGallery.filter(
+                (g) =>
+                    g.tournament === ed._id ||
+                    (ed.tournament && g.tournament === ed.tournament) ||
+                    (ed.photos && ed.photos.includes(g._id)),
             );
-
-            await Promise.all(promises);
+            setGallery(matchedGallery);
         } catch (err: unknown) {
             const apiError = err as { response?: { status?: number; data?: { message?: string } } };
             if (apiError.response?.status === 404) {
@@ -521,7 +533,7 @@ export default function TournamentEditionDetail() {
                                 <img
                                     src={heroImage}
                                     alt={`${edition.edition} Archival Photography`}
-                                    className="w-full h-full object-cover filter sepia-[0.25] contrast-[1.08] transition-all duration-300 group-hover/photo:filter-none"
+                                    className="w-full h-full object-cover transition-all duration-300"
                                     onError={(e) => {
                                         (e.target as HTMLImageElement).src = FALLBACK_ARCHIVAL_HERO;
                                     }}
@@ -871,7 +883,7 @@ export default function TournamentEditionDetail() {
                                                     <img
                                                         src={player.profilePhoto}
                                                         alt={player.name}
-                                                        className="w-full h-full object-cover filter grayscale sepia-[0.25] group-hover:filter-none transition-all duration-300"
+                                                        className="w-full h-full object-cover transition-all duration-300"
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-[#6B665F]">
@@ -1010,7 +1022,7 @@ export default function TournamentEditionDetail() {
                                         <img
                                             src={item.imageUrl}
                                             alt={item.caption || item.eventName || "Tournament Photo"}
-                                            className="w-full h-full object-cover filter grayscale-[0.25] sepia-[0.1] group-hover:filter-none transition-all duration-300"
+                                            className="w-full h-full object-cover transition-all duration-300"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).src = FALLBACK_ARCHIVAL_HERO;
                                             }}

@@ -12,8 +12,7 @@ import {
     Users,
 } from "lucide-react";
 import { getGalleryItems } from "@/api/gallery";
-import { getTournamentEditions } from "@/api/tournaments";
-import { getPlayers } from "@/api/players";
+import { getCachedTournamentEditions, getCachedPlayers, getCachedGalleryItems } from "@/lib/catalogCache";
 import type { GalleryItem, GalleryQuery } from "@/types/gallery";
 import type { TournamentEdition } from "@/types/tournament";
 import type { Player } from "@/types/player";
@@ -67,30 +66,40 @@ export default function Gallery() {
     // Lightbox modal index
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
+    // Load static lookup reference catalogs once from shared cache
+    useEffect(() => {
+        let isMounted = true;
+        Promise.all([getCachedTournamentEditions(), getCachedPlayers()]).then(([editions, playersList]) => {
+            if (isMounted) {
+                setTournaments(editions);
+                setPlayers(playersList);
+            }
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const fetchGalleryData = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         try {
+            if (selectedCategory === "ALL") {
+                const data = await getCachedGalleryItems();
+                setItems(data);
+                return;
+            }
+
             const queryParams: GalleryQuery = {
                 limit: 100,
                 sort: "year",
                 order: "desc",
+                category: selectedCategory,
             };
 
-            if (selectedCategory !== "ALL") {
-                queryParams.category = selectedCategory;
-            }
-
-            const [galleryRes, tournamentsRes, playersRes] = await Promise.all([
-                getGalleryItems(queryParams),
-                getTournamentEditions({ limit: 100 }).catch(() => ({ data: [] })),
-                getPlayers({ limit: 100 }).catch(() => ({ data: [] })),
-            ]);
-
+            const galleryRes = await getGalleryItems(queryParams);
             setItems(galleryRes.data || []);
-            setTournaments(tournamentsRes.data || []);
-            setPlayers(playersRes.data || []);
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Failed to load archival gallery from server";
             setError(errorMessage);
@@ -121,21 +130,27 @@ export default function Gallery() {
         return map;
     }, [players]);
 
-    const tournamentOptions = useMemo(() => [
-        { value: "ALL", label: "All Tournaments" },
-        ...tournaments.map((t) => ({
-            value: t._id,
-            label: t.edition,
-        })),
-    ], [tournaments]);
+    const tournamentOptions = useMemo(
+        () => [
+            { value: "ALL", label: "All Tournaments" },
+            ...tournaments.map((t) => ({
+                value: t._id,
+                label: t.edition,
+            })),
+        ],
+        [tournaments],
+    );
 
-    const playerOptions = useMemo(() => [
-        { value: "ALL", label: "All Players" },
-        ...players.map((p) => ({
-            value: p._id,
-            label: p.name,
-        })),
-    ], [players]);
+    const playerOptions = useMemo(
+        () => [
+            { value: "ALL", label: "All Players" },
+            ...players.map((p) => ({
+                value: p._id,
+                label: p.name,
+            })),
+        ],
+        [players],
+    );
 
     // Filter items client-side for multi-attribute matching (decade, tournament, player, search query)
     const filteredItems = useMemo(() => {
@@ -415,7 +430,7 @@ export default function Gallery() {
                                             // Fallback to authentic curated archival photograph if remote URL is unavailable
                                             e.currentTarget.src = fallbackPhoto;
                                         }}
-                                        className="w-full h-full object-cover filter grayscale sepia-[.2] group-hover:scale-[1.02] transition-transform duration-500"
+                                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
                                         loading="lazy"
                                     />
                                 </div>

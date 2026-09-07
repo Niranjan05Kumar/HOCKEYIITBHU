@@ -22,12 +22,15 @@ import {
     createTournamentEdition,
     updateTournamentEdition,
     deleteTournamentEdition,
-    getTournaments,
 } from "@/api/tournaments";
-import { getTeams } from "@/api/teams";
-import { getPlayers } from "@/api/players";
-import { getAchievements } from "@/api/achievements";
-import { getGalleryItems } from "@/api/gallery";
+import {
+    getCachedTournaments,
+    getCachedTeams,
+    getCachedPlayers,
+    getCachedAchievements,
+    getCachedGalleryItems,
+    invalidateCatalog,
+} from "@/lib/catalogCache";
 import type { Tournament, TournamentEdition, TournamentEditionCreateInput } from "@/types/tournament";
 import type { Team } from "@/types/team";
 import type { Player } from "@/types/player";
@@ -144,30 +147,39 @@ export default function AdminTournamentEditions() {
     const watchedAchievements = watch("achievements") || [];
     const watchedPhotos = watch("photos") || [];
 
-    const tournamentOptions = useMemo(() => [
-        { value: "", label: "Select Tournament Circuit..." },
-        ...tournaments.map((t) => ({
-            value: t._id,
-            label: `${t.name} (${t.type})`,
-        })),
-    ], [tournaments]);
+    const tournamentOptions = useMemo(
+        () => [
+            { value: "", label: "Select Tournament Circuit..." },
+            ...tournaments.map((t) => ({
+                value: t._id,
+                label: `${t.name} (${t.type})`,
+            })),
+        ],
+        [tournaments],
+    );
 
-    const teamOptions = useMemo(() => [
-        { value: "", label: "Select Fielded Varsity Team..." },
-        ...teams.map((tm) => ({
-            value: tm._id,
-            label: `IIT (BHU) Varsity Squad ${tm.year} (Players: ${tm.players.length || 0})${tm.coach ? ` • Coach: ${tm.coach}` : ""}`,
-        })),
-    ], [teams]);
+    const teamOptions = useMemo(
+        () => [
+            { value: "", label: "Select Fielded Varsity Team..." },
+            ...teams.map((tm) => ({
+                value: tm._id,
+                label: `IIT (BHU) Varsity Squad ${tm.year} (Players: ${tm.players.length || 0})${tm.coach ? ` • Coach: ${tm.coach}` : ""}`,
+            })),
+        ],
+        [teams],
+    );
 
-    const captainOptions = useMemo(() => [
-        { value: "", label: "None / Not Appointed" },
-        ...players.map((p) => ({
-            value: p._id,
-            label: `${p.name} (#${p.jerseyNumber ?? "N/A"})`,
-            sublabel: p.playingPosition || "Squad Member",
-        })),
-    ], [players]);
+    const captainOptions = useMemo(
+        () => [
+            { value: "", label: "None / Not Appointed" },
+            ...players.map((p) => ({
+                value: p._id,
+                label: `${p.name} (#${p.jerseyNumber ?? "N/A"})`,
+                sublabel: p.playingPosition || "Squad Member",
+            })),
+        ],
+        [players],
+    );
 
     // -------------------------------------------------------------------------
     // Catalog Dictionaries for Fast Lookups
@@ -217,21 +229,21 @@ export default function AdminTournamentEditions() {
     // -------------------------------------------------------------------------
     const fetchCatalogs = useCallback(async () => {
         try {
-            const [tourRes, teamRes, playerRes, achRes, galRes] = await Promise.allSettled([
-                getTournaments({ limit: 100 }),
-                getTeams({ limit: 100 }),
-                getPlayers({ limit: 100 }),
-                getAchievements({ limit: 100 }),
-                getGalleryItems({ limit: 100 }),
+            const [tourList, teamList, playerList, achList, galList] = await Promise.all([
+                getCachedTournaments().catch(() => []),
+                getCachedTeams().catch(() => []),
+                getCachedPlayers().catch(() => []),
+                getCachedAchievements().catch(() => []),
+                getCachedGalleryItems().catch(() => []),
             ]);
 
-            if (tourRes.status === "fulfilled") setTournaments(tourRes.value.data);
-            if (teamRes.status === "fulfilled") setTeams(teamRes.value.data);
-            if (playerRes.status === "fulfilled") setPlayers(playerRes.value.data);
-            if (achRes.status === "fulfilled") setAchievements(achRes.value.data);
-            if (galRes.status === "fulfilled") setGalleryItems(galRes.value.data);
+            setTournaments(tourList);
+            setTeams(teamList);
+            setPlayers(playerList);
+            setAchievements(achList);
+            setGalleryItems(galList);
         } catch {
-            // Catalogs failed gracefully
+            // Catalogs handled gracefully
         }
     }, []);
 
@@ -430,12 +442,14 @@ export default function AdminTournamentEditions() {
                     `Edition dossier "${updated.data.edition}" (${updated.data.year}) committed successfully.`,
                 );
                 setSelectedEdition(updated.data);
+                invalidateCatalog("tournamentEditions");
                 fetchEditionsList();
             } else {
                 // CREATE RECORD
                 const created = await createTournamentEdition(payload);
                 setFormSuccess(`New tournament edition "${created.data.edition}" created successfully.`);
                 setSelectedEdition(created.data);
+                invalidateCatalog("tournamentEditions");
                 fetchEditionsList();
             }
         } catch (err: unknown) {
@@ -483,6 +497,7 @@ export default function AdminTournamentEditions() {
                 switchModeToCreate();
             }
 
+            invalidateCatalog("tournamentEditions");
             fetchEditionsList();
         } catch (err: unknown) {
             let errorMsg = "Failed to delete tournament edition.";
@@ -610,7 +625,10 @@ export default function AdminTournamentEditions() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchEditionsList}
+                        onClick={() => {
+                            invalidateCatalog("tournamentEditions");
+                            void fetchEditionsList();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -1069,7 +1087,11 @@ export default function AdminTournamentEditions() {
                                             </label>
                                             <AdminSelect
                                                 value={watchedFinalPosition ? String(watchedFinalPosition) : ""}
-                                                onChange={(val) => setValue("finalPosition", val ? (Number(val) as any) : undefined, { shouldValidate: true })}
+                                                onChange={(val) =>
+                                                    setValue("finalPosition", val ? Number(val) : undefined, {
+                                                        shouldValidate: true,
+                                                    })
+                                                }
                                                 options={PLACEMENT_OPTIONS.map((opt) => ({
                                                     value: String(opt.value),
                                                     label: opt.label,

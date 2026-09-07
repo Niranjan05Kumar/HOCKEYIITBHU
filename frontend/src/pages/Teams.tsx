@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, AlertCircle, RotateCcw, Users } from "lucide-react";
-import { getTeams } from "@/api/teams";
-import { getPlayers } from "@/api/players";
-import { getAchievements } from "@/api/achievements";
-import type { Team, TeamQuery } from "@/types/team";
+import { getCachedTeams, getCachedPlayers, getCachedAchievements } from "@/lib/catalogCache";
+import type { Team } from "@/types/team";
 import type { Player } from "@/types/player";
 import type { Achievement } from "@/types/achievement";
 
@@ -23,15 +21,6 @@ const ARCHIVAL_FALLBACK_PHOTOS = [
     "https://lh3.googleusercontent.com/aida-public/AB6AXuAIVFO5SnSKmpprjm8UJMR0m47INc-LCnEpnuRQmsRoRoo74K2_-EgoafqkhMiQOGax0-YRPNqCvFLk4bVlkNEBxhM1H7ZPTHYTPJLBcDbJqqRoAZQheCp2nUGMwU6RULNrS-jJ4lRiAkPk7_vDKmBmiPi9YyymaqDCu5HP0212vtPEcDcJazDEC6B55-c1b-C1lNPjG5cglBsiij-agTJkJxSXYLJ1qAUVThPvtfsZHcg1hH6WQo4h",
     "https://lh3.googleusercontent.com/aida-public/AB6AXuDrULn3QWq7rzqfevj_CsfacfezNx6K-6xNF1xI_dbOKZRK1tOedhTp_0XyXKOE_6dvmKWzQI4AHeuu3PecgkN3Ei3ovp-DRIgFMyw2hg85UnDETCm_K9nxS8Tt9hYnaVj8-aY7yBG_7onjPohgq2uZ2cEIk9qKDJ9e1x5oUxnOLywBwXc_ynbbnYw0H0yhugYKpDrMcWLkGqd6AyaGwx6Oo4PvfC5WEUDjLhgEFXmDu3kjUMMC_M2J",
     "https://lh3.googleusercontent.com/aida-public/AB6AXuDejODOGo69W7KUERfCn2kVnq3WixGtdIkrtNvWHfAZZkFqcKzihrk_oIEO1_tOdv5dVR4f3dfZBHzpXKfF_76s_HSD0dIyTb0FhDLbobgjDTFJ9FpB8JVl6cGHMxlYX3J_zEvGL3TFyzYmavhpLE5T4fBZGELTPM6IKzkDREL-R5Wh93f2T5X9MRuJnc96IclQZY1eQNYHzuFkVZTbgCk6AuxgGNoK2z5bs7-_8QVfrZgeWV--UiwB",
-];
-
-const ARCHIVAL_FILTERS = [
-    "grayscale contrast-125",
-    "sepia-[0.3]",
-    "grayscale",
-    "grayscale contrast-150",
-    "sepia-[0.5]",
-    "grayscale contrast-110",
 ];
 
 function formatSeasonYear(year: number): string {
@@ -56,21 +45,15 @@ export default function Teams() {
         setError(null);
 
         try {
-            const queryParams: TeamQuery = {
-                limit: 100,
-                sort: "year",
-                order: "desc",
-            };
-
-            const [teamsRes, playersRes, achievementsRes] = await Promise.all([
-                getTeams(queryParams),
-                getPlayers({ limit: 100 }).catch(() => ({ data: [] })),
-                getAchievements({ limit: 100 }).catch(() => ({ data: [] })),
+            const [teamsData, playersList, achievementsList] = await Promise.all([
+                getCachedTeams(),
+                getCachedPlayers(),
+                getCachedAchievements(),
             ]);
 
-            setTeams(teamsRes.data || []);
-            setPlayers(playersRes.data || []);
-            setAchievements(achievementsRes.data || []);
+            setTeams(teamsData);
+            setPlayers(playersList);
+            setAchievements(achievementsList);
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Failed to load teams archive from server";
             setError(errorMessage);
@@ -303,7 +286,6 @@ export default function Teams() {
                             Math.abs(team.year % ARCHIVAL_FALLBACK_PHOTOS.length) ||
                             index % ARCHIVAL_FALLBACK_PHOTOS.length;
                         const photoUrl = team.teamPhoto || ARCHIVAL_FALLBACK_PHOTOS[fallbackIndex];
-                        const photoFilter = ARCHIVAL_FILTERS[fallbackIndex % ARCHIVAL_FILTERS.length];
 
                         return (
                             <Link
@@ -319,7 +301,7 @@ export default function Teams() {
                                             onError={(e) => {
                                                 e.currentTarget.src = ARCHIVAL_FALLBACK_PHOTOS[0];
                                             }}
-                                            className={`w-full h-full object-cover filter ${photoFilter} group-hover:scale-105 transition-transform duration-500`}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             loading="lazy"
                                         />
                                     </div>

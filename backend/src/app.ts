@@ -21,8 +21,7 @@ import galleryItemRoutes from "./routes/galleryItemRoutes.js";
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 const configuredOrigins =
-    process.env.CLIENT_URL
-        ?.split(",")
+    process.env.CLIENT_URL?.split(",")
         .map((origin) => origin.trim())
         .filter((origin) => origin.length > 0) ?? [];
 const defaultDevOrigins = ["http://localhost:5173", "http://localhost:3000"];
@@ -103,14 +102,15 @@ app.use(
 );
 
 const globalRateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
-const globalRateLimitMax = Number(process.env.RATE_LIMIT_MAX || 100);
+const defaultRateLimitMax = isProduction ? 1000 : 5000;
+const globalRateLimitMax = Number(process.env.RATE_LIMIT_MAX || defaultRateLimitMax);
 
 const limiter = rateLimit({
     windowMs:
         Number.isSafeInteger(globalRateLimitWindowMs) && globalRateLimitWindowMs > 0
             ? globalRateLimitWindowMs
             : 15 * 60 * 1000,
-    max: Number.isSafeInteger(globalRateLimitMax) && globalRateLimitMax > 0 ? globalRateLimitMax : 100,
+    max: Number.isSafeInteger(globalRateLimitMax) && globalRateLimitMax > 0 ? globalRateLimitMax : defaultRateLimitMax,
     standardHeaders: true,
     legacyHeaders: false,
     handler: buildRateLimitHandler("Too many requests, please try again later."),

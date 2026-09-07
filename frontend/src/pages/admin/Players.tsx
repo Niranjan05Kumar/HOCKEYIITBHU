@@ -18,7 +18,7 @@ import {
     BadgeAlert,
 } from "lucide-react";
 import { getPlayers, createPlayer, updatePlayer, deletePlayer } from "@/api/players";
-import { getAchievements } from "@/api/achievements";
+import { getCachedAchievements, invalidateCatalog } from "@/lib/catalogCache";
 import type { Player, PlayerCreateInput, PlayingPosition, PlayerStatus } from "@/types/player";
 import type { Achievement } from "@/types/achievement";
 import { playerFormSchema, type PlayerFormData } from "@/schemas/playerSchema";
@@ -150,10 +150,10 @@ export default function AdminPlayers() {
         fetchPlayersList();
     }, [fetchPlayersList]);
 
-    // Load available achievements once for cross-linking
+    // Load available achievements once for cross-linking from shared cache
     useEffect(() => {
-        getAchievements({ limit: 100 })
-            .then((res) => setCatalogAchievements(res.data))
+        getCachedAchievements()
+            .then((data) => setCatalogAchievements(data))
             .catch(() => setCatalogAchievements([]));
     }, []);
 
@@ -347,6 +347,7 @@ export default function AdminPlayers() {
                 setSelectedPhotoFile(null);
             }
 
+            invalidateCatalog("players");
             await fetchPlayersList();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "An error occurred while saving player dossier";
@@ -369,6 +370,7 @@ export default function AdminPlayers() {
                 switchModeToCreate();
             }
             setPlayerToDelete(null);
+            invalidateCatalog("players");
             await fetchPlayersList();
         } catch (err: unknown) {
             const msg =
@@ -417,7 +419,10 @@ export default function AdminPlayers() {
                 <div className="flex items-center gap-3 shrink-0">
                     <button
                         type="button"
-                        onClick={fetchPlayersList}
+                        onClick={() => {
+                            invalidateCatalog("players");
+                            void fetchPlayersList();
+                        }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
                         title="Synchronize records"
@@ -885,14 +890,18 @@ export default function AdminPlayers() {
                                     </label>
                                     <AdminSelect
                                         value={watchedPosition || ""}
-                                        onChange={(val) => setValue("playingPosition", val as PlayingPosition, { shouldValidate: true })}
+                                        onChange={(val) =>
+                                            setValue("playingPosition", val as PlayingPosition, {
+                                                shouldValidate: true,
+                                            })
+                                        }
                                         options={PLAYING_POSITION_OPTIONS}
                                         placeholder="Select Position (Optional)"
                                         error={Boolean(errors.playingPosition)}
                                     />
                                     {errors.playingPosition && (
                                         <p className="text-[11px] text-[#7A2E2E] mt-0.5">
-                                             {errors.playingPosition.message}
+                                            {errors.playingPosition.message}
                                         </p>
                                     )}
                                 </div>

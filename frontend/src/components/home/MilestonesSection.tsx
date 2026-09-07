@@ -167,7 +167,7 @@ export default function MilestonesSection() {
                                     <img
                                         src={event.photo}
                                         alt={event.title}
-                                        className="w-full h-full object-cover grayscale opacity-90 mix-blend-multiply group-hover:scale-105 transition-transform duration-700"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-[#dcdad3] flex flex-col items-center justify-center p-6 text-center text-[#6B665F]">
