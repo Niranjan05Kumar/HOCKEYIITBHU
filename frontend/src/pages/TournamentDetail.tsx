@@ -4,9 +4,6 @@ import { ArrowLeft, Trophy, Calendar, MapPin, AlertCircle, RotateCcw, ArrowRight
 import { getTournamentById, getTournamentEditions } from "@/api/tournaments";
 import type { Tournament, TournamentEdition } from "@/types/tournament";
 
-const ARCHIVAL_PHOTO_URL =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDi7plpkEox-IEt3HcKoLvibM6_gtk59Sf873inR-D2etH1qPvn_MwKmcs4UkKwHNqIDqQVq_ao7C63AOBbs7HvCMaC7wtMsJT5OF9btW1Awr38zSXDuv4D32dm5Oh-wh4U-xocuheXEYVSrWNLyFItWEkfoZkNGYMAkl98mdmLBq_hoiEQYVpRVzwlJkemx1IXXFd-7IYgS_7XSmBKF7hywR0L75yEwHKjsZ6e7Q5GkN93EIO3u-eI";
-
 const getPositionBadge = (pos?: number) => {
     if (pos === 1) {
         return {
@@ -207,18 +204,37 @@ export default function TournamentDetail() {
                             </div>
 
                             {/* Right Archival Visual Banner */}
-                            <div className="md:col-span-4 hidden md:flex justify-end items-start relative h-[240px]">
-                                <div className="w-full h-full bg-[#F4F1EA] p-4 border border-[rgba(26,26,26,0.08)] flex items-center justify-center relative shadow-[4px_4px_0_0_rgba(26,26,26,0.05)]">
-                                    <img
-                                        alt={`${tournament.name} Archival Record`}
-                                        src={ARCHIVAL_PHOTO_URL}
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute bottom-2 right-2 bg-black/75 px-2 py-0.5 text-[#F4F1EA] text-[10px] font-mono tracking-wider">
-                                        ARCHIVAL REF: {tournament.type}
+                            {(() => {
+                                const tournamentImage = tournament.logo || latestEdition?.photos?.[0];
+                                return (
+                                    <div className="md:col-span-4 hidden md:flex justify-end items-start relative h-[240px]">
+                                        <div className="w-full h-full bg-[#F4F1EA] p-4 border border-[rgba(26,26,26,0.08)] flex items-center justify-center relative shadow-[4px_4px_0_0_rgba(26,26,26,0.05)] overflow-hidden">
+                                            {tournamentImage ? (
+                                                <>
+                                                    <img
+                                                        alt={`${tournament.name} Archival Record`}
+                                                        src={tournamentImage}
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = "none";
+                                                        }}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute bottom-2 right-2 bg-black/75 px-2 py-0.5 text-[#F4F1EA] text-[10px] font-mono tracking-wider">
+                                                        ARCHIVAL REF: {tournament.type}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="w-full h-full bg-[#dcdad3] flex flex-col items-center justify-center p-6 text-center text-[#6B665F]">
+                                                    <Trophy className="w-14 h-14 mb-2 text-[#5a181e]/40" />
+                                                    <span className="text-xs uppercase tracking-widest font-semibold">
+                                                        {tournament.type} Archive
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                );
+                            })()}
                         </div>
                     </section>
 

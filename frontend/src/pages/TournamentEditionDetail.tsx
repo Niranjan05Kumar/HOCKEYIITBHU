@@ -39,9 +39,6 @@ import type { GalleryItem } from "@/types/gallery";
 
 type TabType = "matches" | "squad" | "distinctions" | "gallery";
 
-const FALLBACK_ARCHIVAL_HERO =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDi7plpkEox-IEt3HcKoLvibM6_gtk59Sf873inR-D2etH1qPvn_MwKmcs4UkKwHNqIDqQVq_ao7C63AOBbs7HvCMaC7wtMsJT5OF9btW1Awr38zSXDuv4D32dm5Oh-wh4U-xocuheXEYVSrWNLyFItWEkfoZkNGYMAkl98mdmLBq_hoiEQYVpRVzwlJkemx1IXXFd-7IYgS_7XSmBKF7hywR0L75yEwHKjsZ6e7Q5GkN93EIO3u-eI";
-
 export default function TournamentEditionDetail() {
     const { id, editionId } = useParams<{ id?: string; editionId?: string }>();
     const targetEditionId = editionId || id;
@@ -253,13 +250,19 @@ export default function TournamentEditionDetail() {
         };
     }, [matches]);
 
-    // Hero image logic: use primary gallery image if available, else fallback
+    // Hero image logic: use edition photo, gallery image, or tournament logo if available
     const heroImage = useMemo(() => {
+        if (edition?.photos && edition.photos.length > 0 && edition.photos[0]) {
+            return edition.photos[0];
+        }
         if (gallery.length > 0 && gallery[0].imageUrl) {
             return gallery[0].imageUrl;
         }
-        return FALLBACK_ARCHIVAL_HERO;
-    }, [gallery]);
+        if (tournament?.logo) {
+            return tournament.logo;
+        }
+        return null;
+    }, [edition, gallery, tournament]);
 
     // Position badge styling
     const positionBadge = useMemo(() => {
@@ -529,18 +532,29 @@ export default function TournamentEditionDetail() {
 
                         {/* Archival Photo Frame (4 Cols) */}
                         <div className="md:col-span-4 hidden md:flex justify-end items-center">
-                            <div className="w-full h-[220px] bg-[#FCF9F2] p-2.5 border border-[rgba(26,26,26,0.12)] relative shadow-[4px_4px_0_0_rgba(26,26,26,0.08)] group/photo">
-                                <img
-                                    src={heroImage}
-                                    alt={`${edition.edition} Archival Photography`}
-                                    className="w-full h-full object-cover transition-all duration-300"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = FALLBACK_ARCHIVAL_HERO;
-                                    }}
-                                />
-                                <div className="absolute bottom-4 right-4 bg-[#121212]/85 px-2.5 py-1 text-white font-mono text-[9px] uppercase tracking-wider backdrop-blur-sm">
-                                    ARCHIVAL REF: {edition.year}-{edition.edition.slice(0, 4).toUpperCase()}
-                                </div>
+                            <div className="w-full h-[220px] bg-[#FCF9F2] p-2.5 border border-[rgba(26,26,26,0.12)] relative shadow-[4px_4px_0_0_rgba(26,26,26,0.08)] group/photo overflow-hidden flex items-center justify-center">
+                                {heroImage ? (
+                                    <>
+                                        <img
+                                            src={heroImage}
+                                            alt={`${edition.edition} Archival Photography`}
+                                            className="w-full h-full object-cover transition-all duration-300"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = "none";
+                                            }}
+                                        />
+                                        <div className="absolute bottom-4 right-4 bg-[#121212]/85 px-2.5 py-1 text-white font-mono text-[9px] uppercase tracking-wider backdrop-blur-sm">
+                                            ARCHIVAL REF: {edition.year}-{edition.edition.slice(0, 4).toUpperCase()}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full bg-[#dcdad3] flex flex-col items-center justify-center p-4 text-center text-[#6B665F]">
+                                        <Trophy className="w-12 h-12 mb-2 text-[#5a181e]/40" />
+                                        <span className="text-xs uppercase tracking-widest font-semibold">
+                                            {edition.edition} Archive
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1018,13 +1032,13 @@ export default function TournamentEditionDetail() {
                                     onClick={() => setActivePhotoIndex(idx)}
                                     className="bg-[#FCF9F2] border border-[rgba(26,26,26,0.12)] p-3 cursor-pointer group shadow-sm hover:shadow-md transition-all duration-300"
                                 >
-                                    <div className="aspect-[4/3] w-full overflow-hidden bg-[#ECE8E1] relative border border-[rgba(26,26,26,0.06)]">
+                                    <div className="aspect-[4/3] w-full overflow-hidden bg-[#ECE8E1] relative border border-[rgba(26,26,26,0.06)] flex items-center justify-center">
                                         <img
                                             src={item.imageUrl}
                                             alt={item.caption || item.eventName || "Tournament Photo"}
                                             className="w-full h-full object-cover transition-all duration-300"
                                             onError={(e) => {
-                                                (e.target as HTMLImageElement).src = FALLBACK_ARCHIVAL_HERO;
+                                                (e.target as HTMLImageElement).style.display = "none";
                                             }}
                                         />
                                         <div className="absolute top-2 right-2 bg-[#121212]/80 text-white text-[10px] font-mono px-2 py-0.5">
@@ -1083,7 +1097,7 @@ export default function TournamentEditionDetail() {
                                 alt={gallery[activePhotoIndex].caption || "Gallery Preview"}
                                 className="max-h-[55vh] w-auto max-w-full object-contain mx-auto"
                                 onError={(e) => {
-                                    (e.target as HTMLImageElement).src = FALLBACK_ARCHIVAL_HERO;
+                                    (e.target as HTMLImageElement).style.display = "none";
                                 }}
                             />
 

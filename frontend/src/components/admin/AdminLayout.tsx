@@ -16,8 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context";
 
-const CREST_URL =
-    "https://lh3.googleusercontent.com/aida/AEtjO1VG2Lu-UiqgQyMuZ6D1Ab5dW9GRgFyeTLKDzjhX0VbbyB0T840DrfY0N_JZYi6wZUh7pqec5pKch0umVhVrjGMMYBRB2Oxx07UFn1QwaiSv362lmrZk3vpROD6ZDisUY09Mk0DzKLJwfZj_pyJr1d6i5GwSmCE8kqgqbkB7e77HxwP8RixKgFBleJmgVjrljLhpZo5DJj6S5ed18w6JCcj2okOfn2JK7IBuwgNq98jC17RrJKeMbr6Uqno";
+const CREST_URL = "/images/logo.png";
 
 interface NavItem {
     label: string;

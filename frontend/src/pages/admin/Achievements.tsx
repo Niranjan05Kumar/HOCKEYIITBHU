@@ -180,33 +180,27 @@ export default function AdminAchievements() {
     // -------------------------------------------------------------------------
     // Fetch Relational Catalogues
     // -------------------------------------------------------------------------
-    useEffect(() => {
-        let isMounted = true;
-        const loadCatalogues = async () => {
-            try {
-                const [tournamentsRes, playersRes, teamsRes, galleryRes] = await Promise.all([
-                    getCachedTournaments().catch(() => []),
-                    getCachedPlayers().catch(() => []),
-                    getCachedTeams().catch(() => []),
-                    getCachedGalleryItems().catch(() => []),
-                ]);
+    const loadCatalogues = useCallback(async (force = false) => {
+        try {
+            const [tournamentsRes, playersRes, teamsRes, galleryRes] = await Promise.allSettled([
+                getCachedTournaments(force),
+                getCachedPlayers(force),
+                getCachedTeams(force),
+                getCachedGalleryItems(force),
+            ]);
 
-                if (isMounted) {
-                    setTournaments(tournamentsRes || []);
-                    setPlayers(playersRes || []);
-                    setTeams(teamsRes || []);
-                    setGalleryItems(galleryRes || []);
-                }
-            } catch (err) {
-                console.error("Failed to load relational catalogues", err);
-            }
-        };
-
-        loadCatalogues();
-        return () => {
-            isMounted = false;
-        };
+            if (tournamentsRes.status === "fulfilled") setTournaments(tournamentsRes.value);
+            if (playersRes.status === "fulfilled") setPlayers(playersRes.value);
+            if (teamsRes.status === "fulfilled") setTeams(teamsRes.value);
+            if (galleryRes.status === "fulfilled") setGalleryItems(galleryRes.value);
+        } catch (err) {
+            console.error("Failed to load relational catalogues", err);
+        }
     }, []);
+
+    useEffect(() => {
+        loadCatalogues();
+    }, [loadCatalogues]);
 
     // -------------------------------------------------------------------------
     // Fetch Achievements Directory List
@@ -528,7 +522,12 @@ export default function AdminAchievements() {
                         type="button"
                         onClick={() => {
                             invalidateCatalog("achievements");
-                            fetchAchievementsList();
+                            invalidateCatalog("tournaments");
+                            invalidateCatalog("players");
+                            invalidateCatalog("teams");
+                            invalidateCatalog("gallery");
+                            void fetchAchievementsList();
+                            void loadCatalogues(true);
                         }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"

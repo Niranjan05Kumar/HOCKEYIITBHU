@@ -39,15 +39,6 @@ const DECADES = [
     { label: "1920s – 1940s", value: "1920-1949", min: 1920, max: 1949 },
 ];
 
-// Curated authentic archival imagery from the Stitch Historical Gallery design
-const ARCHIVAL_FALLBACK_PHOTOS = [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDeEt7GB4w5flX9hWGBewZIR2wCwDbZXwIs7A4o0-ifM02cHl0IQEzvZ-qweqQeuumlBEXHTENilzZt3tjK_LCy6BURk42rVBQDGIxvEZNkrIv4HuoMxqiWsvsgKXRaYv_d0I37d9sLavi7EadPjtk3JKfGCc0PCvMh0lQP28pkhn0eOs5kq2MhrhyKnnxD38T-g6D5hgYFxiFC-z-7T1PUm5DNHLNChR9nd4KnXSeTid6N95i4rfXI",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuA_2riTq7TzagIf2cakNL6xUYXlGeb0K4UpqXNhhNQWbXNidPK_wR3NBWnVSSwJ8zDAU85LnGpN9naFShvVTknhETGztjSXMIcAMIJvT8il0v_zk6duBjWeXBzElZrFz7zV4Gt20wism61af7tjp9C8Troie9EiwZZPQXajAuTrBWa9v28_qmoKPwO7mqV92tm1Yj65sF9kqrhN73O_QHBPLaikjhSCsLLSgqBbisNkxGeI1nteY8JC",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDHNkhfmNtqV19f6gyoiK6zhbYanraxrTV_HfyQ6DS6GQbt97iiZ1xhUMu0PjuM3U7mkuxXPK9AEfIYU7qfjuiHvd56pkEFZsopeYwapF6bjt58oi38qM6yWNmJN1Of-tgcWXXMXX554yXQ8HNhEt678ZY7CBCuFn8p7ibKNCOQpAzjH1dlfeOLzwbmQ0ySjeVhKakZRMSASeH5a-5-riYJ-evgov7kn9EG4ORbRdz1r4fyIsd3F5Nn",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBq_kwV0M6-4RfkohsvwNgyq0j0drFj4ptsf95-YWdGFBI4vzHY5QT466YGSn0YlZltrRPiQ1f632_VdDSnOMVrIj6kEr61tTfSDz4KX-8zvF377Uy8rVtftp-dMS8bw13BVhb_PIxO8CMwlATAOOe9OtvH1Y_BagBskRX58EmY_7RbJIjjE_t9tWS2P7ZOQkQvHJY03iymEGfz-ZB_khyicYm4IbAGDWffLptfXtyXwCisPH0_dC0b",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDDo1O5BwdgNhM3hT5QmVvj-ZRkClh3w0NzOu8TOcbCzHgxaQfGvrXlvKsUlTV9xFG6vlLeWXrdAAWHxLT_qqQE9DmsDaqqjBX_FZsQQbjQf1llDX2qcvv2jDbAfgK-k6bh-9wDqkWkyxO5WiEP3gcP-lsn6oQQYo3wgoSugLUIec8lQSzPnRN6mkxbASCLpOEmgGnMbgPJXkvsoeQkTmX-cJQkonfvmpZLJlzICMjVluQKU-VkYqYw",
-];
-
 export default function Gallery() {
     const [items, setItems] = useState<GalleryItem[]>([]);
     const [tournaments, setTournaments] = useState<TournamentEdition[]>([]);
@@ -69,10 +60,10 @@ export default function Gallery() {
     // Load static lookup reference catalogs once from shared cache
     useEffect(() => {
         let isMounted = true;
-        Promise.all([getCachedTournamentEditions(), getCachedPlayers()]).then(([editions, playersList]) => {
+        Promise.allSettled([getCachedTournamentEditions(), getCachedPlayers()]).then(([editionsRes, playersRes]) => {
             if (isMounted) {
-                setTournaments(editions);
-                setPlayers(playersList);
+                if (editionsRes.status === "fulfilled") setTournaments(editionsRes.value);
+                if (playersRes.status === "fulfilled") setPlayers(playersRes.value);
             }
         });
         return () => {
@@ -406,9 +397,6 @@ export default function Gallery() {
             {!loading && !error && filteredItems.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredItems.map((item, index) => {
-                        const fallbackIndex = index % ARCHIVAL_FALLBACK_PHOTOS.length;
-                        const fallbackPhoto = ARCHIVAL_FALLBACK_PHOTOS[fallbackIndex];
-
                         const titleText = item.eventName || item.caption || `${item.category} Memory`;
                         const subtitleText =
                             item.description ||
@@ -422,17 +410,25 @@ export default function Gallery() {
                                 className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-6 hover:bg-[#E2DDD4] hover:border-[rgba(26,26,26,0.25)] transition-all cursor-pointer group flex flex-col justify-between"
                             >
                                 {/* Photo Mount Frame */}
-                                <div className="relative w-full overflow-hidden mb-4 bg-[#dcdad3] border border-[rgba(26,26,26,0.08)] aspect-[4/3]">
-                                    <img
-                                        src={item.imageUrl}
-                                        alt={titleText}
-                                        onError={(e) => {
-                                            // Fallback to authentic curated archival photograph if remote URL is unavailable
-                                            e.currentTarget.src = fallbackPhoto;
-                                        }}
-                                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-                                        loading="lazy"
-                                    />
+                                <div className="relative w-full overflow-hidden mb-4 bg-[#dcdad3] border border-[rgba(26,26,26,0.08)] aspect-[4/3] flex items-center justify-center">
+                                    {item.imageUrl ? (
+                                        <img
+                                            src={item.imageUrl}
+                                            alt={titleText}
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = "none";
+                                            }}
+                                            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-[#6B665F]">
+                                            <ImageIcon className="w-10 h-10 mb-2 text-[#5a181e]/40" />
+                                            <span className="text-xs uppercase tracking-widest font-semibold">
+                                                Archival Record
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Metadata Section */}
@@ -507,15 +503,23 @@ export default function Gallery() {
 
                         {/* Main Lightbox Image Frame */}
                         <div className="w-full max-h-[60vh] bg-[#121212] overflow-hidden flex items-center justify-center mb-6 border border-[rgba(26,26,26,0.15)]">
-                            <img
-                                src={activeLightboxItem.imageUrl}
-                                alt={activeLightboxItem.caption || activeLightboxItem.eventName || "Archival Image"}
-                                onError={(e) => {
-                                    e.currentTarget.src =
-                                        ARCHIVAL_FALLBACK_PHOTOS[lightboxIndex % ARCHIVAL_FALLBACK_PHOTOS.length];
-                                }}
-                                className="max-w-full max-h-[60vh] object-contain"
-                            />
+                            {activeLightboxItem.imageUrl ? (
+                                <img
+                                    src={activeLightboxItem.imageUrl}
+                                    alt={activeLightboxItem.caption || activeLightboxItem.eventName || "Archival Image"}
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                    }}
+                                    className="max-w-full max-h-[60vh] object-contain"
+                                />
+                            ) : (
+                                <div className="w-full h-48 flex flex-col items-center justify-center text-white/50">
+                                    <ImageIcon className="w-12 h-12 mb-2 text-[#5a181e]" />
+                                    <span className="text-xs uppercase tracking-widest font-semibold">
+                                        Archival Capture Preview
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Lightbox Dossier Details */}

@@ -8,9 +8,6 @@ import type { Achievement, AchievementType, RecipientType } from "@/types/achiev
 import type { HistoryEvent } from "@/types/history";
 import CustomSelect from "@/components/common/CustomSelect";
 
-const ARCHIVAL_PHOTO_FALLBACK =
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBcM5ZdIUqiaGf60ZQq-2Q0cHW4BfFEzCPOH11KsJe6fX7ewPcMcbzJD-WJpYoIUipjOquBiVKizBUbXrNTp4HiwrlZ25G-JOMa076GVveJAiYf7JjnfPfYkuWUGnRy2Fk3GttsHn5L2y_mceT54jaR-fi68fkUnsMnC_UNqnuvyoY2leVNp_nVTvcoK-8dvEg3ao_VeBCxytIZze-ieUFYgWsRZnQ9TlQrQIFlF2T2-drCtQtsdbXh";
-
 const ACHIEVEMENT_TYPES: { label: string; value: AchievementType | "ALL" }[] = [
     { label: "All Honors", value: "ALL" },
     { label: "Medals", value: "Medal" },
@@ -378,15 +375,24 @@ export default function Achievements() {
                 <section className="mt-16 mb-12 border-t border-[rgba(26,26,26,0.08)] pt-12">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                         <div className="md:col-span-8 bg-[#ECE8E1] p-6 border border-[rgba(26,26,26,0.08)]">
-                            <div className="relative w-full aspect-video overflow-hidden">
-                                <img
-                                    className="w-full h-full object-cover"
-                                    alt={spotlight.title}
-                                    src={spotlight.photo || ARCHIVAL_PHOTO_FALLBACK}
-                                    onError={(e) => {
-                                        e.currentTarget.src = ARCHIVAL_PHOTO_FALLBACK;
-                                    }}
-                                />
+                            <div className="relative w-full aspect-video overflow-hidden bg-[#dcdad3] flex items-center justify-center">
+                                {spotlight.photo ? (
+                                    <img
+                                        className="w-full h-full object-cover"
+                                        alt={spotlight.title}
+                                        src={spotlight.photo}
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = "none";
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-[#6B665F]">
+                                        <Award className="w-12 h-12 mb-2 text-[#5A181E]/40" />
+                                        <span className="text-xs uppercase tracking-widest font-semibold">
+                                            Archival Record • {spotlight.year}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <p className="mt-4 text-xs text-[#6B665F] border-t border-[rgba(26,26,26,0.08)] pt-2 text-right">
                                 Archival Record: {spotlight.year} • {spotlight.title}

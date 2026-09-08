@@ -8,6 +8,7 @@ import type { Team } from "@/types/team";
 import type { Player } from "@/types/player";
 import type { Achievement } from "@/types/achievement";
 import type { GalleryItem } from "@/types/gallery";
+import type { PaginatedResponse } from "@/types/api";
 
 export type CatalogKey =
     "tournaments" | "tournamentEditions" | "teams" | "players" | "achievements" | "gallery" | "matches" | "history";
@@ -61,6 +62,26 @@ async function fetchWithCache<T>(key: CatalogKey, fetcher: () => Promise<T>, for
 }
 
 /**
+ * Helper to fetch all records across pages using limit=100 (the backend schema maximum).
+ */
+async function fetchAllCatalogPages<T>(fetchPage: (page: number) => Promise<PaginatedResponse<T>>): Promise<T[]> {
+    const first = await fetchPage(1);
+    const items = [...(first.data || [])];
+    const totalPages = first.meta?.totalPages ?? 1;
+
+    if (totalPages > 1) {
+        const remaining = await Promise.all(Array.from({ length: totalPages - 1 }, (_, i) => fetchPage(i + 2)));
+        for (const res of remaining) {
+            if (res.data) {
+                items.push(...res.data);
+            }
+        }
+    }
+
+    return items;
+}
+
+/**
  * Invalidates specific catalog or all catalogs upon data mutation.
  */
 export function invalidateCatalog(key?: CatalogKey): void {
@@ -81,10 +102,7 @@ export function invalidateCatalog(key?: CatalogKey): void {
 export async function getCachedTournaments(forceRefresh = false): Promise<Tournament[]> {
     return fetchWithCache(
         "tournaments",
-        async () => {
-            const res = await getTournaments({ limit: 100, sort: "name", order: "asc" });
-            return res.data || [];
-        },
+        () => fetchAllCatalogPages((page) => getTournaments({ page, limit: 100, sort: "name", order: "asc" })),
         forceRefresh,
     );
 }
@@ -95,10 +113,7 @@ export async function getCachedTournaments(forceRefresh = false): Promise<Tourna
 export async function getCachedTournamentEditions(forceRefresh = false): Promise<TournamentEdition[]> {
     return fetchWithCache(
         "tournamentEditions",
-        async () => {
-            const res = await getTournamentEditions({ limit: 100, sort: "year", order: "desc" });
-            return res.data || [];
-        },
+        () => fetchAllCatalogPages((page) => getTournamentEditions({ page, limit: 100, sort: "year", order: "desc" })),
         forceRefresh,
     );
 }
@@ -109,10 +124,7 @@ export async function getCachedTournamentEditions(forceRefresh = false): Promise
 export async function getCachedTeams(forceRefresh = false): Promise<Team[]> {
     return fetchWithCache(
         "teams",
-        async () => {
-            const res = await getTeams({ limit: 100, sort: "year", order: "desc" });
-            return res.data || [];
-        },
+        () => fetchAllCatalogPages((page) => getTeams({ page, limit: 100, sort: "year", order: "desc" })),
         forceRefresh,
     );
 }
@@ -123,10 +135,7 @@ export async function getCachedTeams(forceRefresh = false): Promise<Team[]> {
 export async function getCachedPlayers(forceRefresh = false): Promise<Player[]> {
     return fetchWithCache(
         "players",
-        async () => {
-            const res = await getPlayers({ limit: 200, sort: "name", order: "asc" });
-            return res.data || [];
-        },
+        () => fetchAllCatalogPages((page) => getPlayers({ page, limit: 100, sort: "name", order: "asc" })),
         forceRefresh,
     );
 }
@@ -137,10 +146,7 @@ export async function getCachedPlayers(forceRefresh = false): Promise<Player[]> 
 export async function getCachedAchievements(forceRefresh = false): Promise<Achievement[]> {
     return fetchWithCache(
         "achievements",
-        async () => {
-            const res = await getAchievements({ limit: 100, sort: "year", order: "desc" });
-            return res.data || [];
-        },
+        () => fetchAllCatalogPages((page) => getAchievements({ page, limit: 100, sort: "year", order: "desc" })),
         forceRefresh,
     );
 }
@@ -151,10 +157,7 @@ export async function getCachedAchievements(forceRefresh = false): Promise<Achie
 export async function getCachedGalleryItems(forceRefresh = false): Promise<GalleryItem[]> {
     return fetchWithCache(
         "gallery",
-        async () => {
-            const res = await getGalleryItems({ limit: 100, sort: "createdAt", order: "desc" });
-            return res.data || [];
-        },
+        () => fetchAllCatalogPages((page) => getGalleryItems({ page, limit: 100, sort: "createdAt", order: "desc" })),
         forceRefresh,
     );
 }

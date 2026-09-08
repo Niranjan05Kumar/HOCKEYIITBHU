@@ -150,12 +150,19 @@ export default function AdminPlayers() {
         fetchPlayersList();
     }, [fetchPlayersList]);
 
-    // Load available achievements once for cross-linking from shared cache
-    useEffect(() => {
-        getCachedAchievements()
-            .then((data) => setCatalogAchievements(data))
-            .catch(() => setCatalogAchievements([]));
+    // Load available achievements for cross-linking from shared cache
+    const loadRelationalCatalogs = useCallback(async (force = false) => {
+        try {
+            const data = await getCachedAchievements(force);
+            setCatalogAchievements(data);
+        } catch {
+            setCatalogAchievements([]);
+        }
     }, []);
+
+    useEffect(() => {
+        loadRelationalCatalogs();
+    }, [loadRelationalCatalogs]);
 
     // -------------------------------------------------------------------------
     // Client-side Search Filtering
@@ -421,7 +428,9 @@ export default function AdminPlayers() {
                         type="button"
                         onClick={() => {
                             invalidateCatalog("players");
+                            invalidateCatalog("achievements");
                             void fetchPlayersList();
+                            void loadRelationalCatalogs(true);
                         }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"

@@ -8,14 +8,6 @@ import type { Team } from "@/types/team";
 import type { Achievement } from "@/types/achievement";
 import type { TournamentEdition } from "@/types/tournament";
 
-// Curated archival portrait fallbacks from Stitch Player Profile designs
-const ARCHIVAL_PORTRAIT_FALLBACKS = [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCZJzNp01acfsO58fbGqO_qdO_wkh83yLvmCYdmvTPBHL0CaSRyOUlJiAr1XVCkK_q5ccP6WRFZG_qwrEvBH8kAYCeSWqrVaTLX5YBZWkSo6FaEE_rnJQfjxMv54ahOGZIhsBPt0eUk_jvE7Iix9gDC0kIyt0ge4GEtDYWyX7vQd8Vu628vHhEKIhwdzC8W1bM5KABS2HU-lN1N-Y0Yn6FV51s2gRzCjGdMYhhL2MOuB8TcoLI1-bYX",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBl6_gEypZm9cvzdQ1zA9Y1IIjBErshii7sTnsxyjggcUsqZhv418HJzzUor60L7UbXTWRRzlUY_XHBAuj480GvXEcIHC4eQINWonVOeHq6bZVgr2tqDEVml021SFEwt9yaJ5-EYaJ_6NxB0FyaXfWBSExDQu9O6RKmD1Cyz30TrBS5scFGL2j1lsaKnHbbF_6c_Pl3F1pFFjnzbCw2deyOsGkDXeiVUAl6_DjJaGxOsJPyYutmxYHB",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBRsN0PtOXYO6TTEGjGjqn8scJWGhftTnMzfaJ8dyFNe0Dm61J4p7MRgRgzscS_1i7aQssw-DUfGsnC11T4-INAkHkz3UZs0n7aHkKEOTeIJZLv1qRkVep8SZ9mMdWDC7ehYY1-Vw0DtV5AiBVZVcAaOPIQBioui5pY_3qIuGvCqjtAwPSNdANfifo9HldC_nWWvoPFGItE4vJi097BHqEoqOZXS0DYjYNSg-o1oCXY3hQVutSmRvs6",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAjWXJpVxLrGbs50aORqo80FMyQFzugc0ruul6IC4hjOE1Xk_2-zd_7G42TpUhd5Shj1rV8EDMd456cyM3MVn6Hei2UVTODh1lts8aBnuNoqWijUsVLAlC4Tg3JW2xc0DHcdg_O4vnvvrsbsozVV7-5DJvXRbSeoLXSIFjyyfO0nogHH6Uo8j55tbsej4pZBs5gIp43jfKTfJr6agYO0Cv6D7WVtm6r3OFoUAQ0Zb27jwOG8N8ur9H8",
-];
-
 function formatActiveYears(player: Player): string {
     if (!player.playingYears || player.playingYears.length === 0) {
         return player.status === "current" ? "Active Squad Member" : "Distinguished Alumnus";
@@ -260,10 +252,6 @@ export default function PlayerProfile() {
         );
     }
 
-    // Resolving photo URL (supports direct image url or fallback to curated archival asset)
-    const fallbackPhoto = ARCHIVAL_PORTRAIT_FALLBACKS[0];
-    const photoUrl = player.profilePhoto || fallbackPhoto;
-
     return (
         <main className="flex-grow pt-8 sm:pt-12 pb-16 px-4 md:px-16 max-w-screen-2xl mx-auto w-full bg-[#F4F1EA]">
             {/* Breadcrumb Navigation */}
@@ -283,15 +271,24 @@ export default function PlayerProfile() {
                 <aside className="lg:col-span-4 flex flex-col gap-6">
                     {/* Archival Portrait Frame */}
                     <div className="bg-[#ECE8E1] p-6 border border-[rgba(26,26,26,0.08)] rounded-none relative group">
-                        <div className="w-full aspect-[3/4] bg-[#dcdad3] relative overflow-hidden border border-[rgba(26,26,26,0.12)]">
-                            <img
-                                src={photoUrl}
-                                alt={player.name}
-                                onError={(e) => {
-                                    e.currentTarget.src = ARCHIVAL_PORTRAIT_FALLBACKS[0];
-                                }}
-                                className="w-full h-full object-cover transition-all duration-500"
-                            />
+                        <div className="w-full aspect-[3/4] bg-[#dcdad3] relative overflow-hidden border border-[rgba(26,26,26,0.12)] flex items-center justify-center">
+                            {player.profilePhoto ? (
+                                <img
+                                    src={player.profilePhoto}
+                                    alt={player.name}
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                    }}
+                                    className="w-full h-full object-cover transition-all duration-500"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-[#dcdad3] flex flex-col items-center justify-center p-6 text-center text-[#6B665F]">
+                                    <Users className="w-16 h-16 mb-3 text-[#5a181e]/40" />
+                                    <span className="text-xs uppercase tracking-widest font-semibold">
+                                        {player.playingPosition || "Squad Athlete"}
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Floating Identification Plate */}

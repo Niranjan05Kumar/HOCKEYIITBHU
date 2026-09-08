@@ -4,13 +4,29 @@ import { ArrowRight, Image as ImageIcon, RotateCcw } from "lucide-react";
 import { getGalleryItems } from "@/api/gallery";
 import type { GalleryItem } from "@/types/gallery";
 
-const MASONRY_SPAN_CLASSES = [
-    "col-span-1 row-span-2",
-    "col-span-1 row-span-1",
-    "col-span-2 row-span-1",
-    "col-span-1 row-span-1",
-    "col-span-2 row-span-1",
+const DESKTOP_SPANS = [
+    "md:col-span-1 md:row-span-2 md:aspect-auto",
+    "md:col-span-1 md:row-span-1 md:aspect-auto",
+    "md:col-span-2 md:row-span-1 md:aspect-auto",
+    "md:col-span-1 md:row-span-1 md:aspect-auto",
+    "md:col-span-2 md:row-span-1 md:aspect-auto",
 ];
+
+function getVaultSpans(index: number, total: number): string {
+    const desktop = DESKTOP_SPANS[index % DESKTOP_SPANS.length];
+
+    // Mobile layout: clean, balanced, and responsive with natural aspect ratios
+    // If only 1 item: full-width lead
+    if (total === 1) {
+        return `col-span-2 aspect-[16/10] sm:aspect-[16/9] ${desktop}`;
+    }
+    // If odd item count (e.g. standard 5 or 3): lead card is full-width, followed by balanced 2-column pairs
+    if (total % 2 !== 0 && index === 0) {
+        return `col-span-2 aspect-[16/10] sm:aspect-[16/9] ${desktop}`;
+    }
+    // Balanced 2-column card with natural landscape ratio
+    return `col-span-1 aspect-[4/3] ${desktop}`;
+}
 
 export default function ArchivalVaultSection() {
     const [items, setItems] = useState<GalleryItem[]>([]);
@@ -63,11 +79,11 @@ export default function ArchivalVaultSection() {
 
             {/* Loading Skeleton */}
             {loading && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[180px] sm:auto-rows-[200px]">
-                    {MASONRY_SPAN_CLASSES.map((spanClass, idx) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:auto-rows-[180px] lg:auto-rows-[200px]">
+                    {Array.from({ length: 5 }).map((_, idx) => (
                         <div
                             key={idx}
-                            className={`${spanClass} bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] animate-pulse p-3`}
+                            className={`${getVaultSpans(idx, 5)} bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] animate-pulse p-2.5 sm:p-3`}
                         >
                             <div className="w-full h-full bg-[#dcdad3]" />
                         </div>
@@ -106,28 +122,30 @@ export default function ArchivalVaultSection() {
 
             {/* Real Gallery Masonry Grid */}
             {!loading && !error && items.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[180px] sm:auto-rows-[200px]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:auto-rows-[180px] lg:auto-rows-[200px]">
                     {items.map((item, index) => {
-                        const spanClass = MASONRY_SPAN_CLASSES[index % MASONRY_SPAN_CLASSES.length];
+                        const spanClasses = getVaultSpans(index, items.length);
                         const title = item.caption || item.eventName || item.category;
 
                         return (
                             <article
                                 key={item._id}
-                                className={`${spanClass} bg-[#ECE8E1] p-3 border border-[rgba(26,26,26,0.08)] relative group overflow-hidden`}
+                                className={`${spanClasses} bg-[#ECE8E1] p-2.5 sm:p-3 border border-[rgba(26,26,26,0.08)] relative group overflow-hidden flex flex-col`}
                             >
-                                <img
-                                    src={item.imageUrl}
-                                    alt={title}
-                                    onError={(e) => {
-                                        e.currentTarget.style.opacity = "0.2";
-                                    }}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                                    <span className="text-xs font-medium text-[#F4F1EA] tracking-wider uppercase">
-                                        {title}
-                                    </span>
+                                <div className="w-full h-full relative overflow-hidden flex-1 min-h-0">
+                                    <img
+                                        src={item.imageUrl}
+                                        alt={title}
+                                        onError={(e) => {
+                                            e.currentTarget.style.opacity = "0.2";
+                                        }}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300 flex items-end p-3 sm:p-4">
+                                        <span className="text-[11px] sm:text-xs font-medium text-[#F4F1EA] tracking-wider uppercase line-clamp-2">
+                                            {title}
+                                        </span>
+                                    </div>
                                 </div>
                             </article>
                         );

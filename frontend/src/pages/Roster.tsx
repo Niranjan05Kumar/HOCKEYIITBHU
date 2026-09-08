@@ -22,14 +22,6 @@ const ERAS = [
     { label: "Historical", value: "HISTORICAL", min: 1900, max: 1989 },
 ];
 
-// Curated authentic archival player photography from the Stitch Roster design
-const ARCHIVAL_PLAYER_PHOTOS = [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBl6_gEypZm9cvzdQ1zA9Y1IIjBErshii7sTnsxyjggcUsqZhv418HJzzUor60L7UbXTWRRzlUY_XHBAuj480GvXEcIHC4eQINWonVOeHq6bZVgr2tqDEVml021SFEwt9yaJ5-EYaJ_6NxB0FyaXfWBSExDQu9O6RKmD1Cyz30TrBS5scFGL2j1lsaKnHbbF_6c_Pl3F1pFFjnzbCw2deyOsGkDXeiVUAl6_DjJaGxOsJPyYutmxYHB",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBRsN0PtOXYO6TTEGjGjqn8scJWGhftTnMzfaJ8dyFNe0Dm61J4p7MRgRgzscS_1i7aQssw-DUfGsnC11T4-INAkHkz3UZs0n7aHkKEOTeIJZLv1qRkVep8SZ9mMdWDC7ehYY1-Vw0DtV5AiBVZVcAaOPIQBioui5pY_3qIuGvCqjtAwPSNdANfifo9HldC_nWWvoPFGItE4vJi097BHqEoqOZXS0DYjYNSg-o1oCXY3hQVutSmRvs6",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAjWXJpVxLrGbs50aORqo80FMyQFzugc0ruul6IC4hjOE1Xk_2-zd_7G42TpUhd5Shj1rV8EDMd456cyM3MVn6Hei2UVTODh1lts8aBnuNoqWijUsVLAlC4Tg3JW2xc0DHcdg_O4vnvvrsbsozVV7-5DJvXRbSeoLXSIFjyyfO0nogHH6Uo8j55tbsej4pZBs5gIp43jfKTfJr6agYO0Cv6D7WVtm6r3OFoUAQ0Zb27jwOG8N8ur9H8",
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuD7zVUXzfC7tOKyuZHdNw724FOVsE3JahlDtUG0OxXPT4laMcYGIzmii-oUIBbB0MQ_k9k8R-Elc_yWW1X182E8NsQ1sYC6B61hm4gDzjRwON0TCMIak_nkX7JoBB5rH60r50kCS6XzzRYxQ2oAqymPFbgat9C2KQEqRXIYeflaUp1ZzFp7Uo7D21nP33-OU_nS0ORdfDhD2YPj4lmwNSAQhNdviBi_n77PxcLawQRU35LIhGthofYs",
-];
-
 function formatActiveYears(player: Player): string {
     if (!player.playingYears || player.playingYears.length === 0) {
         return player.status === "current" ? "Active: Current Squad" : "Status: Alumnus";
@@ -269,20 +261,20 @@ export default function Roster() {
 
             {/* Loading State */}
             {loading && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6 auto-rows-fr items-stretch">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
                         <div
                             key={i}
-                            className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-4 animate-pulse flex flex-col justify-between h-[420px]"
+                            className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] p-3 sm:p-4 animate-pulse flex flex-col justify-between h-full"
                         >
-                            <div className="w-full aspect-[3/4] bg-[#dcdad3] mb-4 border border-[rgba(26,26,26,0.08)]" />
-                            <div className="space-y-2 mb-4">
-                                <div className="h-5 bg-[#dcdad3] rounded w-3/4" />
-                                <div className="h-4 bg-[#dcdad3] rounded w-1/2" />
+                            <div className="w-full aspect-[3/4] bg-[#dcdad3] mb-3 sm:mb-4 border border-[rgba(26,26,26,0.08)] shrink-0" />
+                            <div className="space-y-2 mb-3 sm:mb-4 flex-1">
+                                <div className="h-4 sm:h-5 bg-[#dcdad3] rounded w-3/4" />
+                                <div className="h-3 sm:h-4 bg-[#dcdad3] rounded w-1/2" />
                             </div>
-                            <div className="pt-3 border-t border-[rgba(26,26,26,0.08)] flex justify-between items-center">
-                                <div className="h-3 bg-[#dcdad3] rounded w-24" />
-                                <div className="h-3 bg-[#dcdad3] rounded w-4" />
+                            <div className="pt-2.5 sm:pt-3 border-t border-[rgba(26,26,26,0.08)] flex justify-between items-center mt-auto">
+                                <div className="h-2.5 sm:h-3 bg-[#dcdad3] rounded w-16 sm:w-24" />
+                                <div className="h-2.5 sm:h-3 bg-[#dcdad3] rounded w-3 sm:w-4" />
                             </div>
                         </div>
                     ))}
@@ -330,12 +322,8 @@ export default function Roster() {
 
             {/* Roster Grid */}
             {!loading && !error && filteredPlayers.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredPlayers.map((player, index) => {
-                        // Fallback portrait from curated Stitch assets
-                        const fallbackIndex = index % ARCHIVAL_PLAYER_PHOTOS.length;
-                        const photoUrl = player.profilePhoto || ARCHIVAL_PLAYER_PHOTOS[fallbackIndex];
-
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6 auto-rows-fr items-stretch">
+                    {filteredPlayers.map((player) => {
                         const isCurrent = player.status === "current";
 
                         return (
@@ -345,19 +333,28 @@ export default function Roster() {
                                 className="bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] hover:border-[rgba(26,26,26,0.25)] rounded-none overflow-hidden group hover:bg-[#E2DDD4] transition-colors cursor-pointer flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-[#5a181e]/30"
                             >
                                 {/* Photo Mount Frame */}
-                                <div className="relative w-full aspect-[3/4] bg-[#dcdad3] p-6">
-                                    <img
-                                        src={photoUrl}
-                                        alt={player.name}
-                                        onError={(e) => {
-                                            e.currentTarget.src = ARCHIVAL_PLAYER_PHOTOS[0];
-                                        }}
-                                        className="w-full h-full object-cover transition-all duration-500 border border-[rgba(26,26,26,0.1)]"
-                                        loading="lazy"
-                                    />
+                                <div className="relative w-full aspect-[3/4] bg-[#dcdad3] p-3 sm:p-4 md:p-5 lg:p-6 flex items-center justify-center shrink-0">
+                                    {player.profilePhoto ? (
+                                        <img
+                                            src={player.profilePhoto}
+                                            alt={player.name}
+                                            onError={(e) => {
+                                                e.currentTarget.style.display = "none";
+                                            }}
+                                            className="w-full h-full object-cover transition-all duration-500 border border-[rgba(26,26,26,0.1)]"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-[#dcdad3] flex flex-col items-center justify-center p-3 sm:p-4 text-center text-[#6B665F] border border-[rgba(26,26,26,0.1)]">
+                                            <Users className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mb-1.5 sm:mb-2 text-[#5a181e]/40" />
+                                            <span className="text-[10px] sm:text-xs uppercase tracking-widest font-semibold truncate max-w-full">
+                                                {player.playingPosition || "Squad Athlete"}
+                                            </span>
+                                        </div>
+                                    )}
                                     {/* Status Pill Badge */}
                                     <div
-                                        className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[11px] font-medium uppercase tracking-wider ${
+                                        className={`absolute top-2.5 right-2.5 sm:top-3 sm:right-3 md:top-4 md:right-4 px-2 py-0.5 sm:px-2.5 sm:py-0.5 md:px-3 md:py-1 rounded-full text-[9px] sm:text-[10px] md:text-[11px] font-medium uppercase tracking-wider ${
                                             isCurrent
                                                 ? "bg-[#2D5A3D] text-white"
                                                 : "bg-[#ECE8E1] text-[#6B665F] border border-[rgba(26,26,26,0.12)]"
@@ -368,27 +365,27 @@ export default function Roster() {
                                 </div>
 
                                 {/* Player Card Details */}
-                                <div className="p-4 flex-grow flex flex-col justify-between border-t border-[rgba(26,26,26,0.08)]">
-                                    <div>
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h3 className="text-base font-medium text-[#1A1A1A] group-hover:text-[#5a181e] transition-colors">
+                                <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between border-t border-[rgba(26,26,26,0.08)] min-w-0">
+                                    <div className="min-w-0">
+                                        <div className="flex justify-between items-start mb-1 gap-1.5 min-w-0">
+                                            <h3 className="text-sm sm:text-base font-medium text-[#1A1A1A] group-hover:text-[#5a181e] transition-colors truncate min-w-0 flex-1">
                                                 {player.name}
                                             </h3>
                                             {player.jerseyNumber !== undefined && (
-                                                <span className="text-sm font-medium text-[#9C968D]">
+                                                <span className="text-xs sm:text-sm font-medium text-[#9C968D] shrink-0 font-mono">
                                                     #{player.jerseyNumber}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-[#6B665F] uppercase tracking-wider mb-3 font-medium">
+                                        <p className="text-[11px] sm:text-xs text-[#6B665F] uppercase tracking-wider mb-2 sm:mb-3 font-medium truncate">
                                             {player.playingPosition || "Squad Member"}
                                         </p>
                                     </div>
 
                                     {/* Active Period & Arrow CTA */}
-                                    <div className="pt-3 border-t border-[rgba(26,26,26,0.08)] flex justify-between items-center text-xs text-[#6B665F]">
-                                        <span>{formatActiveYears(player)}</span>
-                                        <ArrowRight className="w-4 h-4 text-[#9C968D] group-hover:text-[#5a181e] group-hover:translate-x-1 transition-all" />
+                                    <div className="pt-2.5 sm:pt-3 border-t border-[rgba(26,26,26,0.08)] flex justify-between items-center text-[11px] sm:text-xs text-[#6B665F] min-w-0 mt-auto">
+                                        <span className="truncate mr-1 min-w-0">{formatActiveYears(player)}</span>
+                                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#9C968D] group-hover:text-[#5a181e] group-hover:translate-x-1 transition-all shrink-0" />
                                     </div>
                                 </div>
                             </Link>

@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Lock, Menu, X } from "lucide-react";
 
-const CREST_URL =
-    "https://lh3.googleusercontent.com/aida/AEtjO1VG2Lu-UiqgQyMuZ6D1Ab5dW9GRgFyeTLKDzjhX0VbbyB0T840DrfY0N_JZYi6wZUh7pqec5pKch0umVhVrjGMMYBRB2Oxx07UFn1QwaiSv362lmrZk3vpROD6ZDisUY09Mk0DzKLJwfZj_pyJr1d6i5GwSmCE8kqgqbkB7e77HxwP8RixKgFBleJmgVjrljLhpZo5DJj6S5ed18w6JCcj2okOfn2JK7IBuwgNq98jC17RrJKeMbr6Uqno";
+const CREST_URL = "/images/logo.png";
 
 interface NavItem {
     label: string;
@@ -30,19 +29,18 @@ export default function Header() {
                 <Link to="/" className="flex items-center gap-3 group">
                     <img
                         src={CREST_URL}
-                        alt="IIT (BHU) Hockey Crest"
-                        className="w-10 h-10 object-contain transition-transform duration-200 group-hover:scale-105"
+                        alt="IIT BHU Hockey Crest"
+                        className="w-10 h-10 object-contain rounded-full transition-transform duration-200 group-hover:scale-105"
                         onError={(e) => {
-                            // Fallback to stylized initials if remote image fails
                             e.currentTarget.style.display = "none";
                         }}
                     />
                     <div className="flex flex-col">
-                        <span className="font-bold text-base tracking-tight text-[#1A1A1A] leading-tight font-sans">
-                            IIT (BHU) HOCKEY
+                        <span className="font-bold text-lg tracking-tight text-[#5A181E] leading-tight font-sans">
+                            HOCKEY
                         </span>
-                        <span className="text-[10px] tracking-[0.18em] font-medium text-[#6B665F] uppercase leading-tight">
-                            DIGITAL ARCHIVE
+                        <span className="text-sm tracking-[0.16em] font-semibold text-[#5A181E] uppercase leading-tight">
+                            IIT BHU
                         </span>
                     </div>
                 </Link>

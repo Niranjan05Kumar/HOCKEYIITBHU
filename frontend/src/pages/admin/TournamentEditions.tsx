@@ -227,21 +227,21 @@ export default function AdminTournamentEditions() {
     // -------------------------------------------------------------------------
     // Initial Load: Fetch Catalogs & Tournament Editions
     // -------------------------------------------------------------------------
-    const fetchCatalogs = useCallback(async () => {
+    const fetchCatalogs = useCallback(async (force = false) => {
         try {
-            const [tourList, teamList, playerList, achList, galList] = await Promise.all([
-                getCachedTournaments().catch(() => []),
-                getCachedTeams().catch(() => []),
-                getCachedPlayers().catch(() => []),
-                getCachedAchievements().catch(() => []),
-                getCachedGalleryItems().catch(() => []),
+            const [tourList, teamList, playerList, achList, galList] = await Promise.allSettled([
+                getCachedTournaments(force),
+                getCachedTeams(force),
+                getCachedPlayers(force),
+                getCachedAchievements(force),
+                getCachedGalleryItems(force),
             ]);
 
-            setTournaments(tourList);
-            setTeams(teamList);
-            setPlayers(playerList);
-            setAchievements(achList);
-            setGalleryItems(galList);
+            if (tourList.status === "fulfilled") setTournaments(tourList.value);
+            if (teamList.status === "fulfilled") setTeams(teamList.value);
+            if (playerList.status === "fulfilled") setPlayers(playerList.value);
+            if (achList.status === "fulfilled") setAchievements(achList.value);
+            if (galList.status === "fulfilled") setGalleryItems(galList.value);
         } catch {
             // Catalogs handled gracefully
         }
@@ -627,7 +627,13 @@ export default function AdminTournamentEditions() {
                         type="button"
                         onClick={() => {
                             invalidateCatalog("tournamentEditions");
+                            invalidateCatalog("tournaments");
+                            invalidateCatalog("teams");
+                            invalidateCatalog("players");
+                            invalidateCatalog("achievements");
+                            invalidateCatalog("gallery");
                             void fetchEditionsList();
+                            void fetchCatalogs(true);
                         }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"

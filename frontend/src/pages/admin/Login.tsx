@@ -6,8 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context";
 
-const CREST_URL =
-    "https://lh3.googleusercontent.com/aida/AEtjO1VG2Lu-UiqgQyMuZ6D1Ab5dW9GRgFyeTLKDzjhX0VbbyB0T840DrfY0N_JZYi6wZUh7pqec5pKch0umVhVrjGMMYBRB2Oxx07UFn1QwaiSv362lmrZk3vpROD6ZDisUY09Mk0DzKLJwfZj_pyJr1d6i5GwSmCE8kqgqbkB7e77HxwP8RixKgFBleJmgVjrljLhpZo5DJj6S5ed18w6JCcj2okOfn2JK7IBuwgNq98jC17RrJKeMbr6Uqno";
+const CREST_URL = "/images/logo.png";
 
 const loginSchema = z.object({
     email: z.string().trim().min(1, "Institutional email is required").email("Please provide a valid email address"),
@@ -73,9 +72,7 @@ export default function AdminLogin() {
                             e.currentTarget.style.display = "none";
                         }}
                     />
-                    <h1 className="font-serif text-3xl font-bold text-[#3d030b] mb-1.5 tracking-tight">
-                        Heritage Archive
-                    </h1>
+                    <h1 className="text-3xl font-bold text-[#3d030b] mb-1.5 tracking-tight">IIT (BHU) Hockey</h1>
                     <p className="text-xs uppercase tracking-[0.18em] font-semibold text-[#6B665F]">
                         Secure Admin Access
                     </p>

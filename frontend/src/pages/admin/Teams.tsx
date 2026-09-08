@@ -165,16 +165,25 @@ export default function AdminTeams() {
         fetchTeamsList();
     }, [fetchTeamsList]);
 
-    // Load available players and achievements once for squad assignment and cross-linking
-    useEffect(() => {
+    // Load available players and achievements for squad assignment and cross-linking
+    const loadRelationalCatalogs = useCallback(async (force = false) => {
         setPlayersLoading(true);
-        Promise.all([getCachedPlayers().catch(() => []), getCachedAchievements().catch(() => [])])
-            .then(([players, achievements]) => {
-                setCatalogPlayers(players);
-                setCatalogAchievements(achievements);
-            })
-            .finally(() => setPlayersLoading(false));
+        try {
+            const [playersRes, achievementsRes] = await Promise.allSettled([
+                getCachedPlayers(force),
+                getCachedAchievements(force),
+            ]);
+
+            if (playersRes.status === "fulfilled") setCatalogPlayers(playersRes.value);
+            if (achievementsRes.status === "fulfilled") setCatalogAchievements(achievementsRes.value);
+        } finally {
+            setPlayersLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        loadRelationalCatalogs();
+    }, [loadRelationalCatalogs]);
 
     // Close player dropdown on outside click
     useEffect(() => {
@@ -434,7 +443,10 @@ export default function AdminTeams() {
                         type="button"
                         onClick={() => {
                             invalidateCatalog("teams");
+                            invalidateCatalog("players");
+                            invalidateCatalog("achievements");
                             void fetchTeamsList();
+                            void loadRelationalCatalogs(true);
                         }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"

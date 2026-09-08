@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Users, AlertCircle, RotateCcw } from "lucide-react";
+import { Users, AlertCircle, RotateCcw } from "lucide-react";
 import { getTeams } from "@/api/teams";
 import type { Team } from "@/types/team";
 
@@ -120,12 +120,8 @@ export default function SquadSpotlightSection() {
                             <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 px-2 pb-2">
                                 <div>
                                     <h3 className="text-xl sm:text-2xl font-medium text-[#1A1A1A] mb-1 tracking-tight">
-                                        {team.year} Varsity Squad
+                                        {team.year} Squad
                                     </h3>
-                                    <p className="text-sm text-[#6B665F] flex items-center gap-1.5">
-                                        <MapPin className="w-3.5 h-3.5 text-[#5A181E]" />
-                                        Rajputana Ground, Varanasi
-                                    </p>
                                 </div>
                                 <Link
                                     to="/roster"

@@ -4,12 +4,30 @@ export default function Footer() {
     return (
         <footer className="w-full py-8 px-6 md:px-12 bg-[#F4F1EA] border-t border-[rgba(26,26,26,0.08)] text-xs text-[#6B665F]">
             <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-                {/* Social Links & Copyright */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                {/* Brand Lockup, Social Links & Copyright */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-5">
+                    <Link to="/" className="flex items-center gap-2.5 group">
+                        <img
+                            src="/images/logo.png"
+                            alt="IIT BHU Hockey Logo"
+                            className="w-8 h-8 object-contain rounded-full transition-transform duration-200 group-hover:scale-105"
+                        />
+                        <div className="flex flex-col text-left">
+                            <span className="font-bold text-xs tracking-tight text-[#5A181E] uppercase leading-tight font-sans">
+                                HOCKEY
+                            </span>
+                            <span className="text-[10px] tracking-[0.14em] font-semibold text-[#5A181E] uppercase leading-tight">
+                                IIT BHU
+                            </span>
+                        </div>
+                    </Link>
+
+                    <div className="hidden sm:block w-px h-5 bg-[rgba(26,26,26,0.12)]" />
+
                     <div className="flex items-center gap-2 text-[#1A1A1A]">
                         {/* Instagram */}
                         <a
-                            href="https://instagram.com"
+                            href="https://www.instagram.com/iitbhu_hockey/"
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="Instagram"
@@ -20,22 +38,9 @@ export default function Footer() {
                             </svg>
                         </a>
 
-                        {/* Facebook */}
-                        <a
-                            href="https://facebook.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Facebook"
-                            className="w-8 h-8 rounded-full border border-[rgba(26,26,26,0.15)] flex items-center justify-center text-[#1A1A1A] hover:text-[#5A181E] hover:border-[#5A181E] transition-colors"
-                        >
-                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                            </svg>
-                        </a>
-
                         {/* YouTube */}
                         <a
-                            href="https://youtube.com"
+                            href="https://www.youtube.com/@IITBHUHOCKEY"
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="YouTube"

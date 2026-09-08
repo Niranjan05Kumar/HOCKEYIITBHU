@@ -172,19 +172,19 @@ export default function AdminHistory() {
     // -------------------------------------------------------------------------
     // Load Relational Catalogues
     // -------------------------------------------------------------------------
-    const fetchCatalogues = useCallback(async () => {
+    const fetchCatalogues = useCallback(async (force = false) => {
         try {
-            const [tRes, edRes, achRes, galRes] = await Promise.all([
-                getCachedTournaments(),
-                getCachedTournamentEditions(),
-                getCachedAchievements(),
-                getCachedGalleryItems(),
+            const [tRes, edRes, achRes, galRes] = await Promise.allSettled([
+                getCachedTournaments(force),
+                getCachedTournamentEditions(force),
+                getCachedAchievements(force),
+                getCachedGalleryItems(force),
             ]);
 
-            setTournaments(tRes || []);
-            setEditions(edRes || []);
-            setAchievements(achRes || []);
-            setGalleryItems(galRes || []);
+            if (tRes.status === "fulfilled") setTournaments(tRes.value);
+            if (edRes.status === "fulfilled") setEditions(edRes.value);
+            if (achRes.status === "fulfilled") setAchievements(achRes.value);
+            if (galRes.status === "fulfilled") setGalleryItems(galRes.value);
         } catch (err) {
             console.error("Failed to load relational catalogues for history management:", err);
         }
@@ -531,7 +531,12 @@ export default function AdminHistory() {
                         type="button"
                         onClick={() => {
                             invalidateCatalog("history");
-                            fetchEvents();
+                            invalidateCatalog("tournaments");
+                            invalidateCatalog("tournamentEditions");
+                            invalidateCatalog("achievements");
+                            invalidateCatalog("gallery");
+                            void fetchEvents();
+                            void fetchCatalogues(true);
                         }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
@@ -1075,8 +1080,7 @@ export default function AdminHistory() {
                                                     alt="Archival Plate Preview"
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
-                                                        (e.currentTarget as HTMLImageElement).src =
-                                                            "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=200";
+                                                        (e.currentTarget as HTMLImageElement).style.display = "none";
                                                     }}
                                                 />
                                             </div>

@@ -127,11 +127,18 @@ export default function AdminTournaments() {
     }, [fetchTournamentsList]);
 
     // Fetch tournament editions from shared cache to calculate real edition counts
-    useEffect(() => {
-        getCachedTournamentEditions()
-            .then((data) => setAllEditions(data))
-            .catch(() => setAllEditions([]));
+    const loadRelationalCatalogs = useCallback(async (force = false) => {
+        try {
+            const data = await getCachedTournamentEditions(force);
+            setAllEditions(data);
+        } catch {
+            setAllEditions([]);
+        }
     }, []);
+
+    useEffect(() => {
+        loadRelationalCatalogs();
+    }, [loadRelationalCatalogs]);
 
     // -------------------------------------------------------------------------
     // Fast Tournament ID -> Editions Metric Mapping
@@ -338,7 +345,9 @@ export default function AdminTournaments() {
                         type="button"
                         onClick={() => {
                             invalidateCatalog("tournaments");
+                            invalidateCatalog("tournamentEditions");
                             void fetchTournamentsList();
+                            void loadRelationalCatalogs(true);
                         }}
                         disabled={loading}
                         className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#6B665F] hover:text-[#1A1A1A] border border-[rgba(26,26,26,0.15)] hover:border-[rgba(26,26,26,0.3)] transition-all bg-[#ECE8E1] hover:bg-[#E2DDD4] rounded-full disabled:opacity-50 cursor-pointer tracking-wider uppercase"
