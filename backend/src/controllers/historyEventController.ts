@@ -8,6 +8,7 @@ import {
     updateHistoryEvent,
     type HistoryEventCreateInput,
     type HistoryEventQueryInput,
+    type HistoryEventUpdateInput,
 } from "../services/historyService.js";
 
 export const createHistoryEventController = asyncHandler(async (req: Request, res: Response) => {
@@ -42,7 +43,7 @@ export const getHistoryEventByIdController = asyncHandler(async (req: Request, r
 });
 
 export const updateHistoryEventController = asyncHandler(async (req: Request, res: Response) => {
-    const event = await updateHistoryEvent(req.params.id as string, req.body as Partial<HistoryEventCreateInput>);
+    const event = await updateHistoryEvent(req.params.id as string, req.body as HistoryEventUpdateInput);
 
     res.status(200).json({
         success: true,

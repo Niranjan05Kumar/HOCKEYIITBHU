@@ -1,5 +1,6 @@
 import { isValidObjectId, type SortOrder } from "mongoose";
 import HistoryEventModel from "../models/historyEventModel.js";
+import { deleteImage } from "../services/imageService.js";
 import AppError from "../utils/appError.js";
 
 const HISTORY_CATEGORIES = ["Major Victory", "Championship", "Medal", "Milestone", "Memorable Performance"] as const;
@@ -12,7 +13,15 @@ export type HistoryEventCreateInput = {
     tournament?: string;
     achievement?: string;
     photo?: string;
+    photoFileId?: string;
 };
+
+export type HistoryEventUpdateInput = Partial<
+    Omit<HistoryEventCreateInput, "photo" | "photoFileId"> & {
+        photo?: string | null;
+        photoFileId?: string | null;
+    }
+>;
 
 export type HistoryEventQueryInput = {
     year?: number;
@@ -35,17 +44,29 @@ const validateHistoryCategory = (value: string | undefined): void => {
 export const createHistoryEvent = async (data: HistoryEventCreateInput) => {
     validateHistoryCategory(data.category);
 
-    const event = await HistoryEventModel.create({
-        title: data.title,
-        description: data.description,
-        year: data.year,
-        category: data.category,
-        ...(data.tournament !== undefined ? { tournament: data.tournament } : {}),
-        ...(data.achievement !== undefined ? { achievement: data.achievement } : {}),
-        ...(data.photo !== undefined ? { photo: data.photo } : {}),
-    });
+    try {
+        const event = await HistoryEventModel.create({
+            title: data.title,
+            description: data.description,
+            year: data.year,
+            category: data.category,
+            ...(data.tournament !== undefined ? { tournament: data.tournament } : {}),
+            ...(data.achievement !== undefined ? { achievement: data.achievement } : {}),
+            ...(data.photo !== undefined ? { photo: data.photo } : {}),
+            ...(data.photoFileId !== undefined ? { photoFileId: data.photoFileId } : {}),
+        });
 
-    return event;
+        return event;
+    } catch (error) {
+        if (data.photoFileId) {
+            try {
+                await deleteImage(data.photoFileId);
+            } catch (cleanupError) {
+                console.error("Failed to delete orphaned ImageKit file after failed history creation:", cleanupError);
+            }
+        }
+        throw error;
+    }
 };
 
 export const getHistoryEvents = async (query: HistoryEventQueryInput = {}) => {
@@ -99,7 +120,7 @@ export const getHistoryEventById = async (id: string) => {
     return event;
 };
 
-export const updateHistoryEvent = async (id: string, data: Partial<HistoryEventCreateInput>) => {
+export const updateHistoryEvent = async (id: string, data: HistoryEventUpdateInput) => {
     if (!isValidObjectId(id)) {
         throw new AppError("History event id must be a valid MongoDB ObjectId", 400);
     }
@@ -114,7 +135,11 @@ export const updateHistoryEvent = async (id: string, data: Partial<HistoryEventC
         validateHistoryCategory(data.category);
     }
 
-    const nextData: Partial<HistoryEventCreateInput> = {};
+    const oldPhotoFileId = event.photoFileId;
+    const isReplacing = Boolean(data.photoFileId && data.photoFileId !== oldPhotoFileId);
+    const isRemoving = (data.photo === null || data.photo === "") && Boolean(oldPhotoFileId);
+
+    const nextData: Record<string, unknown> = {};
 
     if (data.title !== undefined) nextData.title = data.title;
     if (data.description !== undefined) nextData.description = data.description;
@@ -122,10 +147,46 @@ export const updateHistoryEvent = async (id: string, data: Partial<HistoryEventC
     if (data.category !== undefined) nextData.category = data.category;
     if (data.tournament !== undefined) nextData.tournament = data.tournament;
     if (data.achievement !== undefined) nextData.achievement = data.achievement;
-    if (data.photo !== undefined) nextData.photo = data.photo;
 
-    Object.assign(event, nextData);
-    await event.save();
+    if (data.photo !== undefined) {
+        if (data.photo === null || data.photo === "") {
+            nextData.photo = undefined;
+            nextData.photoFileId = undefined;
+        } else {
+            nextData.photo = data.photo;
+            if (data.photoFileId !== undefined) {
+                nextData.photoFileId = data.photoFileId;
+            }
+        }
+    } else if (data.photoFileId !== undefined) {
+        nextData.photoFileId = data.photoFileId || undefined;
+    }
+
+    try {
+        Object.assign(event, nextData);
+        if (isRemoving) {
+            event.set("photo", undefined);
+            event.set("photoFileId", undefined);
+        }
+        await event.save();
+    } catch (saveError) {
+        if (isReplacing && data.photoFileId) {
+            try {
+                await deleteImage(data.photoFileId);
+            } catch (cleanupError) {
+                console.error("Failed to delete newly uploaded ImageKit file after failed update:", cleanupError);
+            }
+        }
+        throw saveError;
+    }
+
+    if ((isReplacing || isRemoving) && oldPhotoFileId) {
+        try {
+            await deleteImage(oldPhotoFileId);
+        } catch (cleanupError) {
+            console.error("Failed to delete previous ImageKit file after history update:", cleanupError);
+        }
+    }
 
     return event;
 };
@@ -142,5 +203,14 @@ export const deleteHistoryEvent = async (id: string) => {
     }
 
     await HistoryEventModel.findByIdAndDelete(id);
+
+    if (event.photoFileId) {
+        try {
+            await deleteImage(event.photoFileId);
+        } catch (cleanupError) {
+            console.error("Failed to delete ImageKit file during history event deletion:", cleanupError);
+        }
+    }
+
     return event;
 };

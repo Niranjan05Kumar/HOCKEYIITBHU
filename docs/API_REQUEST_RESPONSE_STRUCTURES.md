@@ -284,14 +284,18 @@ Base: `/api/v1/history`
 ### Create
 `POST /api/v1/history`
 
-Example:
+Supports standard JSON or `multipart/form-data` with optional `photoFile` image upload.
+
+Example JSON:
 ```json
 {
   "year": 2022,
   "title": "Historic Performance",
   "description": "...",
   "category": "Memorable Performance",
-  "tournamentId": "..."
+  "tournament": "6aa04204f7de3bd2a43aa34a",
+  "photo": "https://ik.imagekit.io/...",
+  "photoFileId": "6aa04207ead997d09ac7f5af"
 }
 ```
 
@@ -301,13 +305,15 @@ Optional historical information is included only when available.
 - `GET /api/v1/history`
 - `GET /api/v1/history/:id`
 
+Response exposes `photo` and `photoFileId` when present.
+
 Filters:
 - `?year=2022`
 - `?category=Medal`
 
 ### Update/Delete
-- `PATCH /api/v1/history/:id`
-- `DELETE /api/v1/history/:id`
+- `PATCH /api/v1/history/:id` (supports JSON and `multipart/form-data` with `photoFile`)
+- `DELETE /api/v1/history/:id` (automatically triggers ImageKit cleanup if `photoFileId` is present)
 
 ## 11. Gallery
 

@@ -21,7 +21,7 @@ const buildValidationError = (result: {
 
 export const historyBodySchema = z
     .object({
-        year: z
+        year: z.coerce
             .number({ message: "year is required" })
             .int("year must be an integer")
             .min(1900, "Year must be 1900 or later")
@@ -31,13 +31,40 @@ export const historyBodySchema = z
         category: z.enum(HISTORY_CATEGORIES, {
             message: "category must be one of: Major Victory, Championship, Medal, Milestone, Memorable Performance",
         }),
-        tournament: objectIdSchema.optional(),
-        achievement: objectIdSchema.optional(),
+        tournament: z
+            .union([objectIdSchema, z.literal(""), z.null()])
+            .optional()
+            .transform((val) => (val ? val : undefined)),
+        achievement: z
+            .union([objectIdSchema, z.literal(""), z.null()])
+            .optional()
+            .transform((val) => (val ? val : undefined)),
         photo: z.string().trim().url("photo must be a valid URL").optional(),
+        photoFileId: z
+            .string()
+            .trim()
+            .min(1, "photoFileId cannot be empty")
+            .regex(/^[a-zA-Z0-9_-]+$/, "photoFileId must be a valid ImageKit file ID")
+            .optional(),
     })
     .strict();
 
-export const historyUpdateSchema = historyBodySchema.partial();
+export const historyUpdateSchema = historyBodySchema
+    .extend({
+        photo: z.union([z.string().trim().url("photo must be a valid URL"), z.literal(""), z.null()]).optional(),
+        photoFileId: z
+            .union([
+                z
+                    .string()
+                    .trim()
+                    .min(1, "photoFileId cannot be empty")
+                    .regex(/^[a-zA-Z0-9_-]+$/, "photoFileId must be a valid ImageKit file ID"),
+                z.literal(""),
+                z.null(),
+            ])
+            .optional(),
+    })
+    .partial();
 
 export const historyParamsSchema = z.object({
     id: objectIdSchema,

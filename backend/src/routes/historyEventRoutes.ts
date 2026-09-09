@@ -7,6 +7,7 @@ import {
     updateHistoryEventController,
 } from "../controllers/historyEventController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { attachUploadedImage } from "../middleware/imageUploadMiddleware.js";
 import {
     validateHistoryBody,
     validateHistoryParams,
@@ -18,8 +19,21 @@ const router = Router();
 
 router.get("/", validateHistoryQuery, getHistoryEventsController);
 router.get("/:id", validateHistoryParams, getHistoryEventByIdController);
-router.post("/", validateHistoryBody, authMiddleware, createHistoryEventController);
-router.patch("/:id", validateHistoryParams, validateHistoryUpdate, authMiddleware, updateHistoryEventController);
+router.post(
+    "/",
+    authMiddleware,
+    attachUploadedImage("photoFile", "photo", "photoFileId"),
+    validateHistoryBody,
+    createHistoryEventController,
+);
+router.patch(
+    "/:id",
+    authMiddleware,
+    attachUploadedImage("photoFile", "photo", "photoFileId"),
+    validateHistoryParams,
+    validateHistoryUpdate,
+    updateHistoryEventController,
+);
 router.delete("/:id", validateHistoryParams, authMiddleware, deleteHistoryEventController);
 
 export default router;

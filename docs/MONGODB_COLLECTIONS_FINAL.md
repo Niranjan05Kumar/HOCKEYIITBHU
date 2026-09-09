@@ -280,7 +280,8 @@ Store significant events used in the IIT (BHU) Hockey historical timeline.
 | `category` | Type of historical event | Yes |
 | `tournament` | Related tournament/edition | No |
 | `achievement` | Related achievement | No |
-| `photo` | Related Cloudinary image/reference | No |
+| `photo` | Related ImageKit image URL/reference | No |
+| `photoFileId` | ImageKit file ID for photo lifecycle management | No |
 | `createdAt` | Record creation time | Yes |
 | `updatedAt` | Last update time | Yes |
 

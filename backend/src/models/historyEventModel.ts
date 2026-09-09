@@ -37,6 +37,10 @@ const historyEventSchema = new Schema(
             type: String,
             trim: true,
         },
+        photoFileId: {
+            type: String,
+            trim: true,
+        },
     },
     {
         timestamps: true,
