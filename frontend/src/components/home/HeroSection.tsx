@@ -1,4 +1,4 @@
-const HERO_IMAGE_URL = "/images/hero-campus.jpg";
+const HERO_IMAGE_URL = "/images/hero-campus.png";
 
 export default function HeroSection() {
     return (
@@ -15,7 +15,7 @@ export default function HeroSection() {
             </div>
 
             {/* Heading Typography: Positioned slightly above vertical center */}
-            <div className="relative z-10 flex-1 flex items-center justify-center -mt-6 sm:-mt-10 md:-mt-12 w-full max-w-4xl mx-auto text-center">
+            <div className="relative z-10 flex-1 flex items-center justify-center -mt-6 sm:-mt-10 md:-mt-12 w-full max-w-4xl mx-auto text-[#5A181E] text-center">
                 <h1 className="text-4xl sm:text-5xl md:text-7xl text-white tracking-[-0.03em] font-medium leading-[1.08] drop-shadow-[0_3px_12px_rgba(0,0,0,0.9)]">
                     The Legacy of IIT (BHU) Varanasi Hockey
                 </h1>

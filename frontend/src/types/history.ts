@@ -8,7 +8,8 @@ export interface HistoryEvent {
     category: HistoryCategory;
     tournament?: string;
     achievement?: string;
-    photo?: string;
+    photo?: string | null;
+    photoFileId?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -29,7 +30,9 @@ export interface HistoryEventCreateInput {
     category: HistoryCategory;
     tournament?: string;
     achievement?: string;
-    photo?: string;
+    photo?: string | null;
+    photoFileId?: string | null;
+    photoFile?: File | null;
 }
 
 export type HistoryEventUpdateInput = Partial<HistoryEventCreateInput>;

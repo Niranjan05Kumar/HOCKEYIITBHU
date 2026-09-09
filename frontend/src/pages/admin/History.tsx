@@ -16,6 +16,7 @@ import {
     Check,
     Image as ImageIcon,
     BookOpen,
+    Upload,
 } from "lucide-react";
 import { getHistoryEvents, createHistoryEvent, updateHistoryEvent, deleteHistoryEvent } from "@/api/history";
 import {
@@ -80,6 +81,10 @@ export default function AdminHistory() {
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [formSuccess, setFormSuccess] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
+
+    // Archival Photo / ImageKit State
+    const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
     // Gallery Picker Modal State
     const [openGalleryModal, setOpenGalleryModal] = useState<boolean>(false);
@@ -326,12 +331,44 @@ export default function AdminHistory() {
     );
 
     // -------------------------------------------------------------------------
+    // Archival Photo Handlers
+    // -------------------------------------------------------------------------
+    const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            setFormError("Selected photo exceeds the 5MB ImageKit file size limit.");
+            return;
+        }
+
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!allowedTypes.includes(file.type)) {
+            setFormError("Unsupported file type. Allowed formats: JPEG, PNG, WebP, GIF.");
+            return;
+        }
+
+        setSelectedPhotoFile(file);
+        setPhotoPreview(URL.createObjectURL(file));
+        setValue("photo", "");
+        setFormError(null);
+    };
+
+    const handleClearPhoto = () => {
+        setSelectedPhotoFile(null);
+        setPhotoPreview(null);
+        setValue("photo", "");
+    };
+
+    // -------------------------------------------------------------------------
     // Selection Handler (Load into Right Panel)
     // -------------------------------------------------------------------------
     const handleSelectEvent = (event: HistoryEvent) => {
         setSelectedEvent(event);
         setFormSuccess(null);
         setFormError(null);
+        setSelectedPhotoFile(null);
+        setPhotoPreview(event.photo || null);
 
         reset({
             year: event.year,
@@ -359,6 +396,8 @@ export default function AdminHistory() {
         setSelectedEvent(null);
         setFormSuccess(null);
         setFormError(null);
+        setSelectedPhotoFile(null);
+        setPhotoPreview(null);
         reset({
             year: new Date().getFullYear(),
             title: "",
@@ -411,17 +450,27 @@ export default function AdminHistory() {
             }
 
             if (selectedEvent) {
+                // Check if existing photo was removed by user
+                if (selectedEvent.photo && !selectedPhotoFile && !photoPreview && !formData.photo) {
+                    payload.photo = null;
+                    payload.photoFileId = null;
+                }
+
                 // Update
-                const response = await updateHistoryEvent(selectedEvent._id, payload);
+                const response = await updateHistoryEvent(selectedEvent._id, payload, selectedPhotoFile || undefined);
                 invalidateCatalog("history");
                 setFormSuccess(`Chronicle milestone "${response.data.title}" updated successfully.`);
                 setSelectedEvent(response.data);
+                setSelectedPhotoFile(null);
+                setPhotoPreview(response.data.photo || null);
             } else {
                 // Create
-                const response = await createHistoryEvent(payload);
+                const response = await createHistoryEvent(payload, selectedPhotoFile || undefined);
                 invalidateCatalog("history");
                 setFormSuccess(`Chronicle milestone "${response.data.title}" committed to the permanent archive.`);
                 setSelectedEvent(response.data);
+                setSelectedPhotoFile(null);
+                setPhotoPreview(response.data.photo || null);
             }
 
             // Refresh directory list
@@ -766,13 +815,33 @@ export default function AdminHistory() {
                                                         <td className="py-3.5 px-3 font-semibold text-[#3d030b] text-sm">
                                                             {ev.year}
                                                         </td>
-                                                        <td className="py-3.5 px-4 max-w-[260px]">
-                                                            <div className="font-semibold text-[#1A1A1A] text-xs">
-                                                                {ev.title}
+                                                        <td className="py-3.5 px-4 max-w-[280px]">
+                                                            <div className="flex items-start gap-3">
+                                                                {ev.photo ? (
+                                                                    <img
+                                                                        src={ev.photo}
+                                                                        alt={ev.title}
+                                                                        className="w-10 h-10 object-cover rounded border border-[rgba(26,26,26,0.12)] shrink-0"
+                                                                        onError={(e) => {
+                                                                            (
+                                                                                e.currentTarget as HTMLImageElement
+                                                                            ).style.display = "none";
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-10 h-10 rounded bg-[#ECE8E1] border border-[rgba(26,26,26,0.12)] flex items-center justify-center text-[#9C968D] shrink-0">
+                                                                        <ImageIcon className="w-4 h-4" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="min-w-0">
+                                                                    <div className="font-semibold text-[#1A1A1A] text-xs">
+                                                                        {ev.title}
+                                                                    </div>
+                                                                    <p className="text-[#6B665F] text-[11px] leading-relaxed line-clamp-2 mt-0.5">
+                                                                        {ev.description}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <p className="text-[#6B665F] text-[11px] leading-relaxed line-clamp-2 mt-0.5">
-                                                                {ev.description}
-                                                            </p>
                                                         </td>
                                                         <td className="py-3.5 px-3 whitespace-nowrap">
                                                             <span
@@ -1071,62 +1140,80 @@ export default function AdminHistory() {
                                     <label className="text-[11px] uppercase text-[#6B665F] font-medium">
                                         Related Primary Gallery Plate / Photo
                                     </label>
-
-                                    {watchedPhoto ? (
-                                        <div className="p-3 bg-[#ECE8E1] border border-[rgba(26,26,26,0.08)] rounded flex items-center gap-3">
-                                            <div className="w-16 h-16 bg-[#E2DDD4] shrink-0 flex items-center justify-center border border-[rgba(26,26,26,0.12)] overflow-hidden relative">
+                                    {/* Archival Photo Plate Preview & Upload Control */}
+                                    <div className="bg-[#F4F1EA] p-3 border border-[rgba(26,26,26,0.12)] flex items-center space-x-4">
+                                        <div className="w-16 h-16 bg-[#ECE8E1] border border-[rgba(26,26,26,0.15)] flex items-center justify-center shrink-0 overflow-hidden relative">
+                                            {photoPreview || watchedPhoto ? (
                                                 <img
-                                                    src={watchedPhoto}
+                                                    src={photoPreview || watchedPhoto}
                                                     alt="Archival Plate Preview"
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
                                                         (e.currentTarget as HTMLImageElement).style.display = "none";
                                                     }}
                                                 />
-                                            </div>
-                                            <div className="flex flex-col flex-1 min-w-0">
-                                                <span className="font-semibold text-xs text-[#1A1A1A] truncate">
-                                                    {watchedPhoto.split("/").pop() || "Archival Plate"}
-                                                </span>
-                                                <span className="text-[11px] text-[#6B665F] truncate max-w-xs mt-0.5">
-                                                    {watchedPhoto}
-                                                </span>
-                                                <div className="flex items-center gap-2 mt-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setOpenGalleryModal(true)}
-                                                        className="text-[10px] text-[#3d030b] uppercase font-bold hover:underline"
-                                                    >
-                                                        Change Plate
-                                                    </button>
-                                                    <span className="text-[#9C968D] text-xs">|</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setValue("photo", "")}
-                                                        className="text-[10px] text-[#ba1a1a] uppercase font-bold hover:underline"
-                                                    >
-                                                        Detach
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            ) : (
+                                                <ImageIcon className="w-7 h-7 text-[#9C968D]" />
+                                            )}
                                         </div>
-                                    ) : (
-                                        <div className="p-4 bg-[#ECE8E1]/50 border border-dashed border-[rgba(26,26,26,0.15)] rounded flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-                                            <div className="flex items-center gap-2.5 text-[#6B665F] text-xs">
-                                                <ImageIcon className="w-4 h-4 text-[#9C968D]" />
-                                                <span>No primary archival photo plate attached</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
+
+                                        <div className="flex-1 min-w-0 flex flex-col space-y-1">
+                                            <span className="text-xs font-semibold text-[#1A1A1A] truncate">
+                                                {selectedPhotoFile
+                                                    ? selectedPhotoFile.name
+                                                    : selectedEvent?.photo
+                                                      ? "Archival Photo Plate On File"
+                                                      : watchedPhoto
+                                                        ? watchedPhoto.split("/").pop() || "Vault Photo Selected"
+                                                        : "No archival photo uploaded"}
+                                            </span>
+                                            <span className="text-[11px] text-[#9C968D]">
+                                                {selectedPhotoFile
+                                                    ? `${(selectedPhotoFile.size / 1024).toFixed(0)} KB • Ready to sync`
+                                                    : "ImageKit integration • Max 5MB (JPEG, PNG, WebP, GIF)"}
+                                            </span>
+
+                                            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                                                <label className="text-xs text-[#3d030b] hover:underline flex items-center gap-1 cursor-pointer font-semibold">
+                                                    <Upload className="w-3 h-3" />
+                                                    <span>
+                                                        {photoPreview || watchedPhoto || selectedEvent?.photo
+                                                            ? "Replace Photo"
+                                                            : "Upload Photo"}
+                                                    </span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                                        onChange={handlePhotoFileChange}
+                                                        className="sr-only"
+                                                    />
+                                                </label>
+
+                                                <span className="text-[#9C968D] text-xs">|</span>
+
                                                 <button
                                                     type="button"
                                                     onClick={() => setOpenGalleryModal(true)}
-                                                    className="px-3 py-1 bg-[#FCF9F2] hover:bg-[#E2DDD4] text-xs font-medium rounded border border-[rgba(26,26,26,0.12)] text-[#1A1A1A] transition-colors"
+                                                    className="text-xs text-[#6B665F] hover:text-[#1A1A1A] hover:underline"
                                                 >
-                                                    Select from Vault
+                                                    From Vault
                                                 </button>
+
+                                                {(selectedPhotoFile || photoPreview || watchedPhoto) && (
+                                                    <>
+                                                        <span className="text-[#9C968D] text-xs">|</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleClearPhoto}
+                                                            className="text-xs text-[#ba1a1a] hover:underline"
+                                                        >
+                                                            Detach / Clear
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                     {errors.photo && (
                                         <span className="text-[11px] text-[#ba1a1a] font-medium">
                                             {errors.photo.message}
@@ -1279,6 +1366,8 @@ export default function AdminHistory() {
                                     onClick={() => {
                                         if (customPhotoUrl.trim()) {
                                             setValue("photo", customPhotoUrl.trim());
+                                            setSelectedPhotoFile(null);
+                                            setPhotoPreview(customPhotoUrl.trim());
                                             setOpenGalleryModal(false);
                                             setCustomPhotoUrl("");
                                         }
@@ -1314,6 +1403,8 @@ export default function AdminHistory() {
                                                 key={item._id}
                                                 onClick={() => {
                                                     setValue("photo", item.imageUrl);
+                                                    setSelectedPhotoFile(null);
+                                                    setPhotoPreview(item.imageUrl);
                                                     setOpenGalleryModal(false);
                                                 }}
                                                 className="group cursor-pointer p-2 bg-[#ECE8E1] hover:bg-[#E2DDD4] border border-[rgba(26,26,26,0.08)] rounded flex flex-col gap-2 transition-all hover:border-[#3d030b]"
