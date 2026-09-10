@@ -85,8 +85,8 @@ export default function Tournaments() {
                 <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium text-[#3d030b] mb-4 tracking-tight">
                     Tournaments Hub
                 </h1>
-                <p className="text-base sm:text-lg text-[#6B665F] max-w-2xl leading-relaxed">
-                    Comprehensive records of all competitive tournaments contested by IIT (BHU) Hockey across the
+                <p className="text-base text-base text-[#6B665F] max-w-2xl leading-relaxed">
+                    Comprehensive records of all competitive tournaments contested by <br/> IIT (BHU) Hockey across the
                     decades.
                 </p>
             </header>

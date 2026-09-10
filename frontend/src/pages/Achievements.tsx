@@ -139,7 +139,7 @@ export default function Achievements() {
                 <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium text-[#3d030b] mb-4 tracking-tight">
                     Achievements Cabinet
                 </h1>
-                <p className="text-base sm:text-lg text-[#6B665F] max-w-2xl leading-relaxed">
+                <p className="text-base text-base text-[#6B665F] max-w-2xl leading-relaxed">
                     A chronological record of team honors and individual accolades.
                 </p>
             </div>

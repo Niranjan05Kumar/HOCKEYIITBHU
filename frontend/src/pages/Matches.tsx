@@ -263,14 +263,10 @@ export default function Matches() {
             {/* Header Title Section */}
             <div className="border-b border-[rgba(26,26,26,0.12)] pb-6 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-[#5A181E] font-semibold mb-1">
-                        <Swords className="w-4 h-4" />
-                        <span>Competitive Records &amp; Fixtures</span>
-                    </div>
-                    <h1 className="font-serif text-3xl md:text-4xl text-[#3d030b] font-medium tracking-tight">
-                        Matches Directory &amp; Score Register
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium text-[#3d030b] mb-4 tracking-tight">
+                        Matches Directory &amp; Score
                     </h1>
-                    <p className="text-sm text-[#6B665F] mt-1.5 max-w-2xl">
+                    <p className="text-base text-base text-[#6B665F] max-w-2xl leading-relaxed">
                         Official fixtures, verified scorelines, tournament stages, and varsity hockey outcomes across
                         sanctioned championship campaigns.
                     </p>

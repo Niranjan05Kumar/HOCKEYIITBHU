@@ -1,4 +1,8 @@
+import { Download } from "lucide-react";
+
 const HERO_IMAGE_URL = "/images/hero-campus.png";
+const MAGAZINE_PDF_URL = "/images/Drona-magazine-hockey-iitbhu.pdf";
+const MAGAZINE_DOWNLOAD_FILENAME = "IIT-BHU-Hockey-Magazine.pdf";
 
 export default function HeroSection() {
     return (
@@ -22,11 +26,29 @@ export default function HeroSection() {
             </div>
 
             {/* Description Typography: Anchored at the bottom of the hero section */}
-            <div className="relative z-10 w-full max-w-2xl mx-auto text-center pb-2 sm:pb-4">
+            <div className="relative z-10 w-full max-w-2xl mx-auto text-center pb-8 sm:pb-4">
                 <p className="sm:text-lg md:text-xl text-white/95 tracking-wider leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)]">
                     Preserving a century of athletic excellence, archival records, and institutional pride on the fields
                     of Varanasi.
                 </p>
+            </div>
+
+            {/* Download Magazine */}
+            <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 lg:bottom-10 lg:right-12 z-20">
+                <a
+                    href={MAGAZINE_PDF_URL}
+                    download={MAGAZINE_DOWNLOAD_FILENAME}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Download IIT (BHU) Hockey Digital Archive Magazine"
+                    className="group inline-flex items-center gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#5A181E]/95 hover:bg-[#3D030B] text-[#F4F1EA] border border-[#F4F1EA]/25 shadow-lg backdrop-blur-sm font-medium text-xs sm:text-sm tracking-normal transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4F1EA] focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+                >
+                    <Download
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F4F1EA] transition-transform duration-200 group-hover:-translate-y-0.5"
+                        aria-hidden="true"
+                    />
+                    <span>Download Magazine</span>
+                </a>
             </div>
         </section>
     );

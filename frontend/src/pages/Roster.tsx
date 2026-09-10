@@ -135,10 +135,10 @@ export default function Roster() {
             {/* Header Section */}
             <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[rgba(26,26,26,0.08)] pb-8">
                 <div>
-                    <h1 className="text-3xl sm:text-5xl lg:text-7xl font-medium tracking-tight text-[#1A1A1A] mb-2 font-sans">
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium text-[#3d030b] mb-4 tracking-tight">
                         Roster Directory
                     </h1>
-                    <p className="text-sm sm:text-base text-[#6B665F] max-w-2xl leading-relaxed">
+                    <p className="text-base text-base text-[#6B665F] max-w-2xl leading-relaxed">
                         A comprehensive historical archive of players who have represented IIT (BHU) Hockey. Browse
                         current squad members and distinguished alumni.
                     </p>

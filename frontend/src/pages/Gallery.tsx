@@ -233,10 +233,10 @@ export default function Gallery() {
         <main className="flex-grow pt-8 sm:pt-12 pb-16 px-4 md:px-16 max-w-[1440px] mx-auto w-full bg-[#F4F1EA]">
             {/* Header Section */}
             <header className="mb-10 max-w-4xl border-b border-[rgba(26,26,26,0.08)] pb-8">
-                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-medium tracking-tight text-[#3d030b] mb-4">
+                <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium text-[#3d030b] mb-4 tracking-tight">
                     Historical Gallery
                 </h1>
-                <p className="text-sm sm:text-base text-[#6B665F] leading-relaxed max-w-2xl">
+                <p className="text-base text-base text-[#6B665F] max-w-2xl leading-relaxed">
                     Visualizing over a century of hockey heritage through our digitized archival collection. Explore
                     moments frozen in time, capturing the spirit and evolution of the game at IIT (BHU).
                 </p>
