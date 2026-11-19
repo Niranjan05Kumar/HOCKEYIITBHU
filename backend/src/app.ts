@@ -4,7 +4,9 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import session from "express-session";
+import MongoStore from "connect-mongo";
 import rateLimit, { type Options as RateLimitOptions } from "express-rate-limit";
+import { getMongoClientPromise } from "./config/database.js";
 import AppError from "./utils/appError.js";
 import notFoundHandler from "./middleware/notFoundHandler.js";
 import errorHandler from "./middleware/errorHandler.js";
@@ -39,6 +41,12 @@ const sessionSecretFromEnv = process.env.SESSION_SECRET?.trim();
 
 if (isProduction && !sessionSecretFromEnv) {
     throw new Error("SESSION_SECRET must be configured in production");
+}
+
+const mongoUriFromEnv = process.env.MONGODB_URI?.trim();
+
+if (isProduction && !mongoUriFromEnv) {
+    throw new Error("MONGODB_URI must be configured in production");
 }
 
 const sessionSecret = sessionSecretFromEnv || randomBytes(32).toString("hex");
@@ -92,6 +100,12 @@ app.use(
         proxy: isProduction,
         resave: false,
         saveUninitialized: false,
+        store: MongoStore.create({
+            clientPromise: getMongoClientPromise(),
+            collectionName: "sessions",
+            dbName: "HOCKEYIITBHU",
+            touchAfter: 60 * 60,
+        }),
         cookie: {
             httpOnly: true,
             sameSite: isProduction ? "none" : "lax",

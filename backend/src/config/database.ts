@@ -1,5 +1,25 @@
 import mongoose from "mongoose";
 
+export const getMongoClientPromise = async (): Promise<mongoose.mongo.MongoClient> => {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.getClient()) {
+        return mongoose.connection.getClient();
+    }
+
+    return new Promise<mongoose.mongo.MongoClient>((resolve, reject) => {
+        mongoose.connection.once("open", () => {
+            const client = mongoose.connection.getClient();
+            if (client) {
+                resolve(client);
+            } else {
+                reject(new Error("MongoDB client is not available after connection open"));
+            }
+        });
+        mongoose.connection.on("error", (err) => {
+            reject(err);
+        });
+    });
+};
+
 export const connectDB = async () => {
     const mongoUri = process.env.MONGODB_URI?.trim();
 
